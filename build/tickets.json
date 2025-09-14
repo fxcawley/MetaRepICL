@@ -1,0 +1,670 @@
+[
+  {
+    "title": "Initialize repo, licensing, and structure",
+    "description": "Create public repo with MIT license; add `README.md`, `PROJECT_PLAN.md`, `REPRODUCIBILITY.md`, `.gitignore`, and basic directory layout (`src/`, `experiments/`, `configs/`, `data/`, `scripts/`, `notebooks/`).",
+    "acceptance_criteria": "Repo public; CI green on initial commit; docs render; license headers present.",
+    "deliverables": "Repo skeleton, MIT license, README outline.",
+    "dependencies": "None.",
+    "estimate": "0.5 day.",
+    "owner": "Eng Lead.",
+    "labels": [
+      "infra",
+      "P0",
+      "M1"
+    ],
+    "milestone": "M1",
+    "body": "Description:\nCreate public repo with MIT license; add `README.md`, `PROJECT_PLAN.md`, `REPRODUCIBILITY.md`, `.gitignore`, and basic directory layout (`src/`, `experiments/`, `configs/`, `data/`, `scripts/`, `notebooks/`).\n\nAcceptance Criteria:\nRepo public; CI green on initial commit; docs render; license headers present.\n\nDeliverables:\nRepo skeleton, MIT license, README outline.\n\nDependencies:\nNone.\n\nEstimate: 0.5 day.\n\nOwner: Eng Lead.\n"
+  },
+  {
+    "title": "Experiment tracking and config stack",
+    "description": "Integrate Hydra/OmegaConf for hierarchical configs; set up W&B logging with offline mode toggle; define global defaults (seeds, dtype, device). Provide a `conf/` tree.",
+    "acceptance_criteria": "One dry-run experiment produces a W&B run with full config tree snapshot; offline/online both work.",
+    "deliverables": "`conf/` with base, dataset, model, training groups; `logging.py` utility.",
+    "dependencies": "Repo initialized.",
+    "estimate": "1 day.",
+    "owner": "Eng Lead.",
+    "labels": [
+      "infra",
+      "P0",
+      "M1"
+    ],
+    "milestone": "M1",
+    "body": "Description:\nIntegrate Hydra/OmegaConf for hierarchical configs; set up W&B logging with offline mode toggle; define global defaults (seeds, dtype, device). Provide a `conf/` tree.\n\nAcceptance Criteria:\nOne dry-run experiment produces a W&B run with full config tree snapshot; offline/online both work.\n\nDeliverables:\n`conf/` with base, dataset, model, training groups; `logging.py` utility.\n\nDependencies:\nRepo initialized.\n\nEstimate: 1 day.\n\nOwner: Eng Lead.\n"
+  },
+  {
+    "title": "Containerization and lockfiles",
+    "description": "Provide Dockerfile with CUDA base, pinned drivers, and reproducible lockfile (conda-lock or uv). Ensure parity with local env.",
+    "acceptance_criteria": "`docker build` succeeds; container runs smoke test; image captures exact versions.",
+    "deliverables": "`Dockerfile`, `conda-lock.yml` (or `uv.lock`), usage docs.",
+    "dependencies": "Repo initialized.",
+    "estimate": "1 day.",
+    "owner": "Eng Lead.",
+    "labels": [
+      "infra",
+      "reproducibility",
+      "P0",
+      "M1"
+    ],
+    "milestone": "M1",
+    "body": "Description:\nProvide Dockerfile with CUDA base, pinned drivers, and reproducible lockfile (conda-lock or uv). Ensure parity with local env.\n\nAcceptance Criteria:\n`docker build` succeeds; container runs smoke test; image captures exact versions.\n\nDeliverables:\n`Dockerfile`, `conda-lock.yml` (or `uv.lock`), usage docs.\n\nDependencies:\nRepo initialized.\n\nEstimate: 1 day.\n\nOwner: Eng Lead.\n"
+  },
+  {
+    "title": "Reproducibility hooks and CI",
+    "description": "Add deterministic seeds, cudnn flags, env capture; CI checks for formatting, lint, and a 2-minute smoke test on CPU.",
+    "acceptance_criteria": "`make smoke` passes locally and in CI; reproducibility metadata dumped per run.",
+    "deliverables": "`scripts/smoke_test.sh`, GitHub Actions workflow, seed utilities.",
+    "dependencies": "Tracking stack.",
+    "estimate": "1 day.",
+    "owner": "Eng Lead.",
+    "labels": [
+      "infra",
+      "reproducibility",
+      "P0",
+      "M1"
+    ],
+    "milestone": "M1",
+    "body": "Description:\nAdd deterministic seeds, cudnn flags, env capture; CI checks for formatting, lint, and a 2-minute smoke test on CPU.\n\nAcceptance Criteria:\n`make smoke` passes locally and in CI; reproducibility metadata dumped per run.\n\nDeliverables:\n`scripts/smoke_test.sh`, GitHub Actions workflow, seed utilities.\n\nDependencies:\nTracking stack.\n\nEstimate: 1 day.\n\nOwner: Eng Lead.\n"
+  },
+  {
+    "title": "Precision & numerics policy and tests",
+    "description": "Default runtime to float32; enforce unit tests in float64 with 1e-6 tolerances on toys; add parity tests verifying \u22641% prediction deviation float32 vs float64 on fixed seeds.",
+    "acceptance_criteria": "CI job passes float64 unit tests and float32\u2194float64 parity tests.",
+    "deliverables": "Test modules and config flags; documentation in `REPRODUCIBILITY.md`.",
+    "dependencies": "CI in place.",
+    "estimate": "0.5 day.",
+    "owner": "Eng Lead.",
+    "labels": [
+      "infra",
+      "numerics",
+      "P0",
+      "M1"
+    ],
+    "milestone": "M1",
+    "body": "Description:\nDefault runtime to float32; enforce unit tests in float64 with 1e-6 tolerances on toys; add parity tests verifying \u22641% prediction deviation float32 vs float64 on fixed seeds.\n\nAcceptance Criteria:\nCI job passes float64 unit tests and float32\u2194float64 parity tests.\n\nDeliverables:\nTest modules and config flags; documentation in `REPRODUCIBILITY.md`.\n\nDependencies:\nCI in place.\n\nEstimate: 0.5 day.\n\nOwner: Eng Lead.\n"
+  },
+  {
+    "title": "GPU environment + checkpoint policy",
+    "description": "Conda/env file; version pins; gradient checkpointing; checkpoint every 500\u20131000 steps with safe resume.",
+    "acceptance_criteria": "Resume from checkpoint recovers metrics within 1% drift; environment lockfiles exist.",
+    "deliverables": "`environment.yml` or `requirements.txt`, checkpoint IO utils, resume script.",
+    "dependencies": "Repo and CI.",
+    "estimate": "0.5 day.",
+    "owner": "Eng Lead.",
+    "labels": [
+      "infra",
+      "P0",
+      "M1"
+    ],
+    "milestone": "M1",
+    "body": "Description:\nConda/env file; version pins; gradient checkpointing; checkpoint every 500\u20131000 steps with safe resume.\n\nAcceptance Criteria:\nResume from checkpoint recovers metrics within 1% drift; environment lockfiles exist.\n\nDeliverables:\n`environment.yml` or `requirements.txt`, checkpoint IO utils, resume script.\n\nDependencies:\nRepo and CI.\n\nEstimate: 0.5 day.\n\nOwner: Eng Lead.\n"
+  },
+  {
+    "title": "Compute budget table",
+    "description": "For each planned experiment, document max VRAM, wall-time, and FLOPs estimate; provide small-config fallbacks when GPU slots are constrained.",
+    "acceptance_criteria": "`docs/compute_budgets.md` lists budgets for WP1\u2013WP3 experiments; referenced by tickets.",
+    "deliverables": "`docs/compute_budgets.md`.",
+    "dependencies": "Baseline configs.",
+    "estimate": "0.5 day.",
+    "owner": "Eng Lead.",
+    "labels": [
+      "infra",
+      "planning",
+      "P0",
+      "M1"
+    ],
+    "milestone": "M1",
+    "body": "Description:\nFor each planned experiment, document max VRAM, wall-time, and FLOPs estimate; provide small-config fallbacks when GPU slots are constrained.\n\nAcceptance Criteria:\n`docs/compute_budgets.md` lists budgets for WP1\u2013WP3 experiments; referenced by tickets.\n\nDeliverables:\n`docs/compute_budgets.md`.\n\nDependencies:\nBaseline configs.\n\nEstimate: 0.5 day.\n\nOwner: Eng Lead.\n"
+  },
+  {
+    "title": "Seed protocol and pre-commit hook",
+    "description": "Enforce seeded runs and config hashes; add pre-commit hook that blocks runs without an explicit seed and config fingerprint in logs.",
+    "acceptance_criteria": "Hook active; tables report mean\u00b195% CI with listed seeds.",
+    "deliverables": "`.pre-commit-config.yaml`, seed enforcement script.",
+    "dependencies": "Tracking stack.",
+    "estimate": "0.5 day.",
+    "owner": "Eng Lead.",
+    "labels": [
+      "infra",
+      "reproducibility",
+      "P0",
+      "M3"
+    ],
+    "milestone": "M3",
+    "body": "Description:\nEnforce seeded runs and config hashes; add pre-commit hook that blocks runs without an explicit seed and config fingerprint in logs.\n\nAcceptance Criteria:\nHook active; tables report mean\u00b195% CI with listed seeds.\n\nDeliverables:\n`.pre-commit-config.yaml`, seed enforcement script.\n\nDependencies:\nTracking stack.\n\nEstimate: 0.5 day.\n\nOwner: Eng Lead.\n"
+  },
+  {
+    "title": "LAT mat-vec construction (Lemma A)",
+    "description": "Implement linear-attention head that realizes `(Kp)_j` via q/k/v over support tokens.",
+    "acceptance_criteria": "Unit tests validate equality to reference mat-vec within 1e-6 on float64 toy data.",
+    "deliverables": "`src/lat/matvec.py`, tests.",
+    "dependencies": "Infra.",
+    "estimate": "1.5 days.",
+    "owner": "Theory Lead (impl support by Eng).",
+    "labels": [
+      "theory",
+      "LAT",
+      "P0",
+      "M1"
+    ],
+    "milestone": "M1",
+    "body": "Description:\nImplement linear-attention head that realizes `(Kp)_j` via q/k/v over support tokens.\n\nAcceptance Criteria:\nUnit tests validate equality to reference mat-vec within 1e-6 on float64 toy data.\n\nDeliverables:\n`src/lat/matvec.py`, tests.\n\nDependencies:\nInfra.\n\nEstimate: 1.5 days.\n\nOwner: Theory Lead (impl support by Eng).\n"
+  },
+  {
+    "title": "Aggregator reductions (Lemma B)",
+    "description": "Add aggregator token that computes global reductions (\u2211 r_i^2, \u2211 p_i (Ap)_i) and broadcasts scalars.",
+    "acceptance_criteria": "Tests match CPU reference reductions; causal masking verified.",
+    "deliverables": "`src/lat/aggregator.py`, mask utilities.",
+    "dependencies": "LAT mat-vec.",
+    "estimate": "1 day.",
+    "owner": "Theory Lead.",
+    "labels": [
+      "theory",
+      "LAT",
+      "P0",
+      "M1"
+    ],
+    "milestone": "M1",
+    "body": "Description:\nAdd aggregator token that computes global reductions (\u2211 r_i^2, \u2211 p_i (Ap)_i) and broadcasts scalars.\n\nAcceptance Criteria:\nTests match CPU reference reductions; causal masking verified.\n\nDeliverables:\n`src/lat/aggregator.py`, mask utilities.\n\nDependencies:\nLAT mat-vec.\n\nEstimate: 1 day.\n\nOwner: Theory Lead.\n"
+  },
+  {
+    "title": "Token-wise affine updates (Lemma C)",
+    "description": "MLP + residual updates to perform CG updates for (\u03b1, r, p) per token.",
+    "acceptance_criteria": "End-to-end LAT block performs a single CG step identical to CPU reference on toy problem.",
+    "deliverables": "`src/lat/cg_step.py`, tests.",
+    "dependencies": "Lemma A, B.",
+    "estimate": "1.5 days.",
+    "owner": "Theory Lead.",
+    "labels": [
+      "theory",
+      "LAT",
+      "P0",
+      "M1"
+    ],
+    "milestone": "M1",
+    "body": "Description:\nMLP + residual updates to perform CG updates for (\u03b1, r, p) per token.\n\nAcceptance Criteria:\nEnd-to-end LAT block performs a single CG step identical to CPU reference on toy problem.\n\nDeliverables:\n`src/lat/cg_step.py`, tests.\n\nDependencies:\nLemma A, B.\n\nEstimate: 1.5 days.\n\nOwner: Theory Lead.\n"
+  },
+  {
+    "title": "LAT\u2192CG t-step stack + figure",
+    "description": "Compose t steps; generate figure replicating CG convergence curve on synthetic K.",
+    "acceptance_criteria": "Error vs t matches reference CG rate curve; figure added to `figures/`.",
+    "deliverables": "`src/lat/cg_stack.py`, `notebooks/lat_cg_demo.ipynb`, figure.",
+    "dependencies": "CG step.",
+    "estimate": "3 days.",
+    "owner": "Theory Lead.",
+    "labels": [
+      "theory",
+      "LAT",
+      "P0",
+      "M1"
+    ],
+    "milestone": "M1",
+    "body": "Description:\nCompose t steps; generate figure replicating CG convergence curve on synthetic K.\n\nAcceptance Criteria:\nError vs t matches reference CG rate curve; figure added to `figures/`.\n\nDeliverables:\n`src/lat/cg_stack.py`, `notebooks/lat_cg_demo.ipynb`, figure.\n\nDependencies:\nCG step.\n\nEstimate: 3 days.\n\nOwner: Theory Lead.\n"
+  },
+  {
+    "title": "Causal masking proof obligations (S5)",
+    "description": "Formalize masks to prevent query\u2192support leakage prior to final readout; include textual proof obligations.",
+    "acceptance_criteria": "Written note and mask diagrams; tests verifying mask semantics.",
+    "deliverables": "`docs/masking.md`, mask unit tests.",
+    "dependencies": "LAT stack.",
+    "estimate": "2 days.",
+    "owner": "Theory Lead.",
+    "labels": [
+      "theory",
+      "documentation",
+      "P0",
+      "M2"
+    ],
+    "milestone": "M2",
+    "body": "Description:\nFormalize masks to prevent query\u2192support leakage prior to final readout; include textual proof obligations.\n\nAcceptance Criteria:\nWritten note and mask diagrams; tests verifying mask semantics.\n\nDeliverables:\n`docs/masking.md`, mask unit tests.\n\nDependencies:\nLAT stack.\n\nEstimate: 2 days.\n\nOwner: Theory Lead.\n"
+  },
+  {
+    "title": "LAT\u2192CG proof write-up",
+    "description": "Formal write-up of constructive mapping for LAT\u2192CG including mat-vec, reductions, and updates; aligns with figures and tests.",
+    "acceptance_criteria": "Draft note ready for internal theory review.",
+    "deliverables": "`docs/lat_to_cg_proof.md`.",
+    "dependencies": "LAT stack complete.",
+    "estimate": "2 days.",
+    "owner": "Theory Lead.",
+    "labels": [
+      "theory",
+      "documentation",
+      "P0",
+      "M2"
+    ],
+    "milestone": "M2",
+    "body": "Description:\nFormal write-up of constructive mapping for LAT\u2192CG including mat-vec, reductions, and updates; aligns with figures and tests.\n\nAcceptance Criteria:\nDraft note ready for internal theory review.\n\nDeliverables:\n`docs/lat_to_cg_proof.md`.\n\nDependencies:\nLAT stack complete.\n\nEstimate: 2 days.\n\nOwner: Theory Lead.\n"
+  },
+  {
+    "title": "Softmax Route A \u2014 theorem statement and mapping",
+    "description": "Write theorem mapping softmax attention to exponential kernel KRR with parameters (U, \u03c4); define conditions and residual error terms.",
+    "acceptance_criteria": "Draft theorem with definitions and proof sketch; internal review sign-off.",
+    "deliverables": "`docs/route_a_theorem.md`.",
+    "dependencies": "Background finalized.",
+    "estimate": "3 days.",
+    "owner": "Theory Lead.",
+    "labels": [
+      "theory",
+      "softmax",
+      "P0",
+      "M2"
+    ],
+    "milestone": "M2",
+    "body": "Description:\nWrite theorem mapping softmax attention to exponential kernel KRR with parameters (U, \u03c4); define conditions and residual error terms.\n\nAcceptance Criteria:\nDraft theorem with definitions and proof sketch; internal review sign-off.\n\nDeliverables:\n`docs/route_a_theorem.md`.\n\nDependencies:\nBackground finalized.\n\nEstimate: 3 days.\n\nOwner: Theory Lead.\n"
+  },
+  {
+    "title": "Softmax Route A \u2014 minimal empirical validation",
+    "description": "Implement small transformer that demonstrates KRR-like smoothing consistent with exponential kernel; compare to oracle KRR; verify kernel approximation.",
+    "acceptance_criteria": "(1) RMSE within 5% of oracle; (2) qualitative attention \u2192 kernel smoother alignment; (3) operator-norm bound on support set \u2016K_tilde \u2212 K_exp\u2016\u2082 \u2264 \u03b5 (report \u03b5 and its dependence on temperature/U).",
+    "deliverables": "`experiments/route_a_minimal.py`, results artifact.",
+    "dependencies": "Tracking stack, dataset generator.",
+    "estimate": "1.5 days.",
+    "owner": "Eng Lead.",
+    "labels": [
+      "experiment",
+      "softmax",
+      "P0",
+      "M2"
+    ],
+    "milestone": "M2",
+    "body": "Description:\nImplement small transformer that demonstrates KRR-like smoothing consistent with exponential kernel; compare to oracle KRR; verify kernel approximation.\n\nAcceptance Criteria:\n(1) RMSE within 5% of oracle; (2) qualitative attention \u2192 kernel smoother alignment; (3) operator-norm bound on support set \u2016K_tilde \u2212 K_exp\u2016\u2082 \u2264 \u03b5 (report \u03b5 and its dependence on temperature/U).\n\nDeliverables:\n`experiments/route_a_minimal.py`, results artifact.\n\nDependencies:\nTracking stack, dataset generator.\n\nEstimate: 1.5 days.\n\nOwner: Eng Lead.\n"
+  },
+  {
+    "title": "Width\u2013rank theorem \u2014 statement and implications",
+    "description": "Prove and document width\u2013rank tradeoff: when width m < p, effective KRR on rank-m sketch K\u0302; derive query error bound via spectral tail.",
+    "acceptance_criteria": "Draft theorem with clear assumptions and bound in terms of spectral tail \u2211_{i>m} \u03c3_i(K) and/or \u03bb-dependent effective dimension; sanity-check with toy spectra.",
+    "deliverables": "`docs/width_rank_theorem.md`.",
+    "dependencies": "Route A theorem draft.",
+    "estimate": "3 days.",
+    "owner": "Theory Lead.",
+    "labels": [
+      "theory",
+      "bounds",
+      "P0",
+      "M3"
+    ],
+    "milestone": "M3",
+    "body": "Description:\nProve and document width\u2013rank tradeoff: when width m < p, effective KRR on rank-m sketch K\u0302; derive query error bound via spectral tail.\n\nAcceptance Criteria:\nDraft theorem with clear assumptions and bound in terms of spectral tail \u2211_{i>m} \u03c3_i(K) and/or \u03bb-dependent effective dimension; sanity-check with toy spectra.\n\nDeliverables:\n`docs/width_rank_theorem.md`.\n\nDependencies:\nRoute A theorem draft.\n\nEstimate: 3 days.\n\nOwner: Theory Lead.\n"
+  },
+  {
+    "title": "Width\u2013rank empirical \u2014 low-rank sketch experiments",
+    "description": "Implement experiments varying width to probe spectral tail predictions and error; compare K vs K\u0302.",
+    "acceptance_criteria": "Plots show predicted degradation; results reproducible across 3 seeds; report both prediction error and tr(K (K+\u03bbI)^{-1}).",
+    "deliverables": "`experiments/width_rank.py`, figures.",
+    "dependencies": "Width\u2013rank theorem statement.",
+    "estimate": "2 days.",
+    "owner": "Eng Lead.",
+    "labels": [
+      "experiment",
+      "bounds",
+      "P0",
+      "M3"
+    ],
+    "milestone": "M3",
+    "body": "Description:\nImplement experiments varying width to probe spectral tail predictions and error; compare K vs K\u0302.\n\nAcceptance Criteria:\nPlots show predicted degradation; results reproducible across 3 seeds; report both prediction error and tr(K (K+\u03bbI)^{-1}).\n\nDeliverables:\n`experiments/width_rank.py`, figures.\n\nDependencies:\nWidth\u2013rank theorem statement.\n\nEstimate: 2 days.\n\nOwner: Eng Lead.\n"
+  },
+  {
+    "title": "Diagonal/token-wise preconditioner (S2)",
+    "description": "Add realizable diagonal preconditioner via token-wise channel scaling; analyze \u03c1(P\u207b\u00b9A) and empirical effect.",
+    "acceptance_criteria": "Measured convergence improvement consistent with analysis; ablation results.",
+    "deliverables": "`src/lat/preconditioner.py`, `experiments/precond.py`.",
+    "dependencies": "CG stack.",
+    "estimate": "1.5 days.",
+    "owner": "Theory Lead (with Eng support).",
+    "labels": [
+      "theory",
+      "ablation",
+      "P1",
+      "M3"
+    ],
+    "milestone": "M3",
+    "body": "Description:\nAdd realizable diagonal preconditioner via token-wise channel scaling; analyze \u03c1(P\u207b\u00b9A) and empirical effect.\n\nAcceptance Criteria:\nMeasured convergence improvement consistent with analysis; ablation results.\n\nDeliverables:\n`src/lat/preconditioner.py`, `experiments/precond.py`.\n\nDependencies:\nCG stack.\n\nEstimate: 1.5 days.\n\nOwner: Theory Lead (with Eng support).\n"
+  },
+  {
+    "title": "Route B \u2014 \u03b5-approx unnormalized mat-vec bound",
+    "description": "Derive operator-norm bound for two-head + MLP rescaling approximating dot-product mat-vec; target per-iter \u03b5 \u2264 1e\u22122; quantify total O(\u03b5 t) error.",
+    "acceptance_criteria": "Bound includes explicit \u03b5 \u2264 1e\u22122 target per mat-vec and a cumulative guarantee \u2016f_t \u2212 f*\u2016 \u2264 C(\u03ba) \u00b7 ((\u221a\u03ba \u2212 1)/(\u221a\u03ba + 1))^t + O(\u03b5 t); internal review.",
+    "deliverables": "`docs/route_b_bound.md`.",
+    "dependencies": "Route A complete.",
+    "estimate": "3 days.",
+    "owner": "Theory Lead.",
+    "labels": [
+      "theory",
+      "softmax",
+      "P1",
+      "M3"
+    ],
+    "milestone": "M3",
+    "body": "Description:\nDerive operator-norm bound for two-head + MLP rescaling approximating dot-product mat-vec; target per-iter \u03b5 \u2264 1e\u22122; quantify total O(\u03b5 t) error.\n\nAcceptance Criteria:\nBound includes explicit \u03b5 \u2264 1e\u22122 target per mat-vec and a cumulative guarantee \u2016f_t \u2212 f*\u2016 \u2264 C(\u03ba) \u00b7 ((\u221a\u03ba \u2212 1)/(\u221a\u03ba + 1))^t + O(\u03b5 t); internal review.\n\nDeliverables:\n`docs/route_b_bound.md`.\n\nDependencies:\nRoute A complete.\n\nEstimate: 3 days.\n\nOwner: Theory Lead.\n"
+  },
+  {
+    "title": "Route B \u2014 prototype implementation and test",
+    "description": "Implement two-head rescaling + small MLP; validate mat-vec approximation error \u2264 1e-2 per iter on toy problems.",
+    "acceptance_criteria": "Empirical operator error \u2264 target; cumulative error matches O(\u03b5 t).",
+    "deliverables": "`src/softmax/route_b.py`, tests, small experiment.",
+    "dependencies": "Bound note.",
+    "estimate": "2 days.",
+    "owner": "Eng Lead.",
+    "labels": [
+      "experiment",
+      "softmax",
+      "P1",
+      "M3"
+    ],
+    "milestone": "M3",
+    "body": "Description:\nImplement two-head rescaling + small MLP; validate mat-vec approximation error \u2264 1e-2 per iter on toy problems.\n\nAcceptance Criteria:\nEmpirical operator error \u2264 target; cumulative error matches O(\u03b5 t).\n\nDeliverables:\n`src/softmax/route_b.py`, tests, small experiment.\n\nDependencies:\nBound note.\n\nEstimate: 2 days.\n\nOwner: Eng Lead.\n"
+  },
+  {
+    "title": "Linear probes for CG state (\u03b1, r, p)",
+    "description": "Train linear readouts to recover CG state from designated layers/heads; specify probe locations.",
+    "acceptance_criteria": "Cosine similarity \u2265 0.9 on validation tasks; include a negative-control probe at an unrelated head/location expected to fail, confirming specificity.",
+    "deliverables": "`experiments/probes/state_probes.py`, probe weights.",
+    "dependencies": "LAT stack and softmax model.",
+    "estimate": "2 days.",
+    "owner": "Mech-Interp Lead.",
+    "labels": [
+      "mechanistic",
+      "probes",
+      "P0",
+      "M4"
+    ],
+    "milestone": "M4",
+    "body": "Description:\nTrain linear readouts to recover CG state from designated layers/heads; specify probe locations.\n\nAcceptance Criteria:\nCosine similarity \u2265 0.9 on validation tasks; include a negative-control probe at an unrelated head/location expected to fail, confirming specificity.\n\nDeliverables:\n`experiments/probes/state_probes.py`, probe weights.\n\nDependencies:\nLAT stack and softmax model.\n\nEstimate: 2 days.\n\nOwner: Mech-Interp Lead.\n"
+  },
+  {
+    "title": "Ablation \u2014 remove mat-vec/aggregator head",
+    "description": "Drop head(s) corresponding to mat-vec/aggregator; measure degradation consistent with CG missing operations.",
+    "acceptance_criteria": "Predictable failure signatures observed; documented figures.",
+    "deliverables": "`experiments/ablations/head_drop.py`, plots.",
+    "dependencies": "Probes set up.",
+    "estimate": "1 day.",
+    "owner": "Mech-Interp Lead.",
+    "labels": [
+      "mechanistic",
+      "ablation",
+      "P0",
+      "M4"
+    ],
+    "milestone": "M4",
+    "body": "Description:\nDrop head(s) corresponding to mat-vec/aggregator; measure degradation consistent with CG missing operations.\n\nAcceptance Criteria:\nPredictable failure signatures observed; documented figures.\n\nDeliverables:\n`experiments/ablations/head_drop.py`, plots.\n\nDependencies:\nProbes set up.\n\nEstimate: 1 day.\n\nOwner: Mech-Interp Lead.\n"
+  },
+  {
+    "title": "Failure-mode demo \u2014 ill-conditioned K and preconditioning",
+    "description": "Construct ill-conditioned kernels where CG stalls; demonstrate improvement with diagonal preconditioner consistent with analysis.",
+    "acceptance_criteria": "Clear stall-and-recover curves; narrative links to \u03ba and preconditioner theory.",
+    "deliverables": "`experiments/failure_modes/ill_conditioned.py`, plots.",
+    "dependencies": "Preconditioner ticket.",
+    "estimate": "1 day.",
+    "owner": "Mech-Interp Lead (Theory support).",
+    "labels": [
+      "mechanistic",
+      "ablation",
+      "P1",
+      "M4"
+    ],
+    "milestone": "M4",
+    "body": "Description:\nConstruct ill-conditioned kernels where CG stalls; demonstrate improvement with diagonal preconditioner consistent with analysis.\n\nAcceptance Criteria:\nClear stall-and-recover curves; narrative links to \u03ba and preconditioner theory.\n\nDeliverables:\n`experiments/failure_modes/ill_conditioned.py`, plots.\n\nDependencies:\nPreconditioner ticket.\n\nEstimate: 1 day.\n\nOwner: Mech-Interp Lead (Theory support).\n"
+  },
+  {
+    "title": "Knob sweeps (\u03bb, \u03ba via conditioning, depth t, width m)",
+    "description": "Systematic sweeps; verify predicted scaling and failure when \u03ba large; include temperature/normalization ablations.",
+    "acceptance_criteria": "Summary tables and plots; CI-friendly subset defined.",
+    "deliverables": "`experiments/sweeps/` configs, results tables.",
+    "dependencies": "Models and probes.",
+    "estimate": "2 days.",
+    "owner": "Mech-Interp Lead (Eng support).",
+    "labels": [
+      "mechanistic",
+      "sweeps",
+      "P0",
+      "M4"
+    ],
+    "milestone": "M4",
+    "body": "Description:\nSystematic sweeps; verify predicted scaling and failure when \u03ba large; include temperature/normalization ablations.\n\nAcceptance Criteria:\nSummary tables and plots; CI-friendly subset defined.\n\nDeliverables:\n`experiments/sweeps/` configs, results tables.\n\nDependencies:\nModels and probes.\n\nEstimate: 2 days.\n\nOwner: Mech-Interp Lead (Eng support).\n"
+  },
+  {
+    "title": "Visualization utilities and report",
+    "description": "Attention maps, probe trajectories, CG-rate overlays; produce `mechanistic_report.md`.",
+    "acceptance_criteria": "Clear figures; report compiles.",
+    "deliverables": "`src/viz/`, `docs/mechanistic_report.md`.",
+    "dependencies": "Sweeps complete.",
+    "estimate": "1 day.",
+    "owner": "Mech-Interp Lead.",
+    "labels": [
+      "mechanistic",
+      "documentation",
+      "P0",
+      "M4"
+    ],
+    "milestone": "M4",
+    "body": "Description:\nAttention maps, probe trajectories, CG-rate overlays; produce `mechanistic_report.md`.\n\nAcceptance Criteria:\nClear figures; report compiles.\n\nDeliverables:\n`src/viz/`, `docs/mechanistic_report.md`.\n\nDependencies:\nSweeps complete.\n\nEstimate: 1 day.\n\nOwner: Mech-Interp Lead.\n"
+  },
+  {
+    "title": "Synthetic linear regression generator",
+    "description": "Generator for controllable spectra, noise, and \u03ba; produces support/query splits and ground-truth KRR.",
+    "acceptance_criteria": "Deterministic generation under seed; KRR oracle matches closed-form.",
+    "deliverables": "`src/data/synth_linear.py`.",
+    "dependencies": "Infra.",
+    "estimate": "1 day.",
+    "owner": "Eng Lead.",
+    "labels": [
+      "data",
+      "P0",
+      "M2"
+    ],
+    "milestone": "M2",
+    "body": "Description:\nGenerator for controllable spectra, noise, and \u03ba; produces support/query splits and ground-truth KRR.\n\nAcceptance Criteria:\nDeterministic generation under seed; KRR oracle matches closed-form.\n\nDeliverables:\n`src/data/synth_linear.py`.\n\nDependencies:\nInfra.\n\nEstimate: 1 day.\n\nOwner: Eng Lead.\n"
+  },
+  {
+    "title": "GLM tasks (logistic/Poisson)",
+    "description": "Controlled GLM ICL tasks with known \u03c6; supports meta-representation alignment tests.",
+    "acceptance_criteria": "Baselines run; metrics defined.",
+    "deliverables": "`src/data/glm.py`, configs.",
+    "dependencies": "Linear generator.",
+    "estimate": "1 day.",
+    "owner": "Eng Lead.",
+    "labels": [
+      "data",
+      "P0",
+      "M2"
+    ],
+    "milestone": "M2",
+    "body": "Description:\nControlled GLM ICL tasks with known \u03c6; supports meta-representation alignment tests.\n\nAcceptance Criteria:\nBaselines run; metrics defined.\n\nDeliverables:\n`src/data/glm.py`, configs.\n\nDependencies:\nLinear generator.\n\nEstimate: 1 day.\n\nOwner: Eng Lead.\n"
+  },
+  {
+    "title": "Language-style numeric-label tasks",
+    "description": "Small corpora with numeric labels; tokenizer configuration for numeric tokens; data loader.",
+    "acceptance_criteria": "End-to-end prompt works; evaluation extracts numeric predictions reliably; log token-level accuracy and numeric MAE; forbid JSON encoding for submission path (numeric tokens only).",
+    "deliverables": "`src/data/lang_numeric.py`, tokenizer setup.",
+    "dependencies": "Infra.",
+    "estimate": "1.5 days.",
+    "owner": "Eng Lead.",
+    "labels": [
+      "data",
+      "language",
+      "P1",
+      "M3"
+    ],
+    "milestone": "M3",
+    "body": "Description:\nSmall corpora with numeric labels; tokenizer configuration for numeric tokens; data loader.\n\nAcceptance Criteria:\nEnd-to-end prompt works; evaluation extracts numeric predictions reliably; log token-level accuracy and numeric MAE; forbid JSON encoding for submission path (numeric tokens only).\n\nDeliverables:\n`src/data/lang_numeric.py`, tokenizer setup.\n\nDependencies:\nInfra.\n\nEstimate: 1.5 days.\n\nOwner: Eng Lead.\n"
+  },
+  {
+    "title": "Baselines \u2014 ridge oracle and GD-ICL",
+    "description": "Implement closed-form ridge on frozen \u03c6 and GD-ICL baselines with fixed/learned step sizes.",
+    "acceptance_criteria": "Baselines reproduce literature performance on synthetic tasks.",
+    "deliverables": "`experiments/baselines/`.",
+    "dependencies": "Data generators.",
+    "estimate": "1.5 days.",
+    "owner": "Eng Lead.",
+    "labels": [
+      "baselines",
+      "P0",
+      "M2"
+    ],
+    "milestone": "M2",
+    "body": "Description:\nImplement closed-form ridge on frozen \u03c6 and GD-ICL baselines with fixed/learned step sizes.\n\nAcceptance Criteria:\nBaselines reproduce literature performance on synthetic tasks.\n\nDeliverables:\n`experiments/baselines/`.\n\nDependencies:\nData generators.\n\nEstimate: 1.5 days.\n\nOwner: Eng Lead.\n"
+  },
+  {
+    "title": "Evaluation harness and metrics",
+    "description": "RMSE vs depth t; agreement with KRR oracle; probe-recoverability metrics; latency/compute tracking.",
+    "acceptance_criteria": "One command runs eval and emits tables/plots; supports 3/5 seeds.",
+    "deliverables": "`src/eval/metrics.py`, `experiments/run_eval.py`.",
+    "dependencies": "Baselines and models.",
+    "estimate": "1.5 days.",
+    "owner": "Eng Lead.",
+    "labels": [
+      "evaluation",
+      "P0",
+      "M3"
+    ],
+    "milestone": "M3",
+    "body": "Description:\nRMSE vs depth t; agreement with KRR oracle; probe-recoverability metrics; latency/compute tracking.\n\nAcceptance Criteria:\nOne command runs eval and emits tables/plots; supports 3/5 seeds.\n\nDeliverables:\n`src/eval/metrics.py`, `experiments/run_eval.py`.\n\nDependencies:\nBaselines and models.\n\nEstimate: 1.5 days.\n\nOwner: Eng Lead.\n"
+  },
+  {
+    "title": "Ablations \u2014 head sharing vs dedicated mat-vec head; temperature/normalization",
+    "description": "Compare shared vs dedicated heads; temperature sweeps; normalization effects.",
+    "acceptance_criteria": "Plots and summary; documented recommendations.",
+    "deliverables": "`experiments/ablations/heads_temp.py`.",
+    "dependencies": "Eval harness.",
+    "estimate": "1 day.",
+    "owner": "Eng Lead (Mech-Interp support).",
+    "labels": [
+      "ablation",
+      "P1",
+      "M4"
+    ],
+    "milestone": "M4",
+    "body": "Description:\nCompare shared vs dedicated heads; temperature sweeps; normalization effects.\n\nAcceptance Criteria:\nPlots and summary; documented recommendations.\n\nDeliverables:\n`experiments/ablations/heads_temp.py`.\n\nDependencies:\nEval harness.\n\nEstimate: 1 day.\n\nOwner: Eng Lead (Mech-Interp support).\n"
+  },
+  {
+    "title": "Drafting \u2014 Background and related work",
+    "description": "Write Background/Motivation and related work sections aligned to `prop.md` and citations.",
+    "acceptance_criteria": "Sections ready for internal review.",
+    "deliverables": "`paper/sections/background.md`.",
+    "dependencies": "None.",
+    "estimate": "1 day.",
+    "owner": "Theory Lead.",
+    "labels": [
+      "paper",
+      "P0",
+      "M2"
+    ],
+    "milestone": "M2",
+    "body": "Description:\nWrite Background/Motivation and related work sections aligned to `prop.md` and citations.\n\nAcceptance Criteria:\nSections ready for internal review.\n\nDeliverables:\n`paper/sections/background.md`.\n\nDependencies:\nNone.\n\nEstimate: 1 day.\n\nOwner: Theory Lead.\n"
+  },
+  {
+    "title": "Drafting \u2014 Theorems (Route A, Width\u2013Rank)",
+    "description": "Formalize theorem statements and proofs; integrate figures.",
+    "acceptance_criteria": "Passes internal theory review.",
+    "deliverables": "`paper/sections/theory.md`.",
+    "dependencies": "WP1 drafts.",
+    "estimate": "2 days.",
+    "owner": "Theory Lead.",
+    "labels": [
+      "paper",
+      "theory",
+      "P0",
+      "M3"
+    ],
+    "milestone": "M3",
+    "body": "Description:\nFormalize theorem statements and proofs; integrate figures.\n\nAcceptance Criteria:\nPasses internal theory review.\n\nDeliverables:\n`paper/sections/theory.md`.\n\nDependencies:\nWP1 drafts.\n\nEstimate: 2 days.\n\nOwner: Theory Lead.\n"
+  },
+  {
+    "title": "Anonymity hygiene audit (double-blind)",
+    "description": "Pre-submission anonymization audit: strip PDF metadata; scrub repo/commit identities; ensure no author-identifying links; if code is referenced, provide anonymized repo or \u201cwill be released upon acceptance\u201d statement.",
+    "acceptance_criteria": "Checklist completed; independent reviewer signs off; no author leakage found.",
+    "deliverables": "`docs/anonymity_checklist.md`, sanitized submission package.",
+    "dependencies": "Draft ready.",
+    "estimate": "0.5 day.",
+    "owner": "Theory Lead (with Eng support).",
+    "labels": [
+      "paper",
+      "policy",
+      "P0",
+      "M2"
+    ],
+    "milestone": "M2",
+    "body": "Description:\nPre-submission anonymization audit: strip PDF metadata; scrub repo/commit identities; ensure no author-identifying links; if code is referenced, provide anonymized repo or \u201cwill be released upon acceptance\u201d statement.\n\nAcceptance Criteria:\nChecklist completed; independent reviewer signs off; no author leakage found.\n\nDeliverables:\n`docs/anonymity_checklist.md`, sanitized submission package.\n\nDependencies:\nDraft ready.\n\nEstimate: 0.5 day.\n\nOwner: Theory Lead (with Eng support).\n"
+  },
+  {
+    "title": "OpenReview packaging check",
+    "description": "Automated script to validate page limits, fonts, margins, anonymity, and presence of forbidden links; runs pre-submission.",
+    "acceptance_criteria": "Script flags zero errors on final package; included in CI as a manual workflow.",
+    "deliverables": "`scripts/check_openreview_package.py`.",
+    "dependencies": "Draft build system.",
+    "estimate": "0.5 day.",
+    "owner": "Eng Lead.",
+    "labels": [
+      "paper",
+      "tooling",
+      "P0",
+      "M2"
+    ],
+    "milestone": "M2",
+    "body": "Description:\nAutomated script to validate page limits, fonts, margins, anonymity, and presence of forbidden links; runs pre-submission.\n\nAcceptance Criteria:\nScript flags zero errors on final package; included in CI as a manual workflow.\n\nDeliverables:\n`scripts/check_openreview_package.py`.\n\nDependencies:\nDraft build system.\n\nEstimate: 0.5 day.\n\nOwner: Eng Lead.\n"
+  },
+  {
+    "title": "Drafting \u2014 Experiments and mechanistic section",
+    "description": "Write empirical results, probes, and ablations sections; include figures/tables.",
+    "acceptance_criteria": "Complete narrative with references to artifacts.",
+    "deliverables": "`paper/sections/experiments.md`.",
+    "dependencies": "WP2\u2013WP3 results.",
+    "estimate": "2 days.",
+    "owner": "Mech-Interp Lead (Eng support).",
+    "labels": [
+      "paper",
+      "P0",
+      "M5"
+    ],
+    "milestone": "M5",
+    "body": "Description:\nWrite empirical results, probes, and ablations sections; include figures/tables.\n\nAcceptance Criteria:\nComplete narrative with references to artifacts.\n\nDeliverables:\n`paper/sections/experiments.md`.\n\nDependencies:\nWP2\u2013WP3 results.\n\nEstimate: 2 days.\n\nOwner: Mech-Interp Lead (Eng support).\n"
+  },
+  {
+    "title": "ArXiv preprint (late Sep)",
+    "description": "Prepare LaTeX or md-to-PDF; ensure reproducibility appendix; upload.",
+    "acceptance_criteria": "Preprint live on arXiv; commit tag recorded; ensure AISTATS submission does not cite or link the preprint.",
+    "deliverables": "`paper/` build system; arXiv submission.",
+    "dependencies": "M2 drafts.",
+    "estimate": "0.5 day.",
+    "owner": "Theory Lead.",
+    "labels": [
+      "release",
+      "P0",
+      "M2"
+    ],
+    "milestone": "M2",
+    "body": "Description:\nPrepare LaTeX or md-to-PDF; ensure reproducibility appendix; upload.\n\nAcceptance Criteria:\nPreprint live on arXiv; commit tag recorded; ensure AISTATS submission does not cite or link the preprint.\n\nDeliverables:\n`paper/` build system; arXiv submission.\n\nDependencies:\nM2 drafts.\n\nEstimate: 0.5 day.\n\nOwner: Theory Lead.\n"
+  },
+  {
+    "title": "Public repo artifacts and checkpoints",
+    "description": "Release small pretrained checkpoints and instructions; verify weights load and reproduce key plots.",
+    "acceptance_criteria": "External user reproduces at least one figure end-to-end; policy check completed \u2014 no public, author-attributed repo before decisions unless anonymized.",
+    "deliverables": "`REPRODUCIBILITY.md` updates, `scripts/reproduce_figure_1.sh`.",
+    "dependencies": "WP1\u2013WP3 code.",
+    "estimate": "1 day.",
+    "owner": "Eng Lead.",
+    "labels": [
+      "release",
+      "reproducibility",
+      "P0",
+      "M6"
+    ],
+    "milestone": "M6",
+    "body": "Description:\nRelease small pretrained checkpoints and instructions; verify weights load and reproduce key plots.\n\nAcceptance Criteria:\nExternal user reproduces at least one figure end-to-end; policy check completed \u2014 no public, author-attributed repo before decisions unless anonymized.\n\nDeliverables:\n`REPRODUCIBILITY.md` updates, `scripts/reproduce_figure_1.sh`.\n\nDependencies:\nWP1\u2013WP3 code.\n\nEstimate: 1 day.\n\nOwner: Eng Lead.\n"
+  },
+  {
+    "title": "Slides and minimal Colab",
+    "description": "Prepare talk slides; Colab notebook for LAT\u2192CG demo.",
+    "acceptance_criteria": "Slides reviewed; Colab runs within 10 minutes CPU/GPU free tier.",
+    "deliverables": "`slides/`, `colab/lat_cg_demo.ipynb`.",
+    "dependencies": "LAT demo.",
+    "estimate": "1 day.",
+    "owner": "Mech-Interp Lead.",
+    "labels": [
+      "comms",
+      "P1",
+      "M6"
+    ],
+    "milestone": "M6",
+    "body": "Description:\nPrepare talk slides; Colab notebook for LAT\u2192CG demo.\n\nAcceptance Criteria:\nSlides reviewed; Colab runs within 10 minutes CPU/GPU free tier.\n\nDeliverables:\n`slides/`, `colab/lat_cg_demo.ipynb`.\n\nDependencies:\nLAT demo.\n\nEstimate: 1 day.\n\nOwner: Mech-Interp Lead.\n"
+  }
+]

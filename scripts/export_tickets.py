@@ -78,7 +78,15 @@ def parse_tickets(md: str) -> List[Ticket]:
         owner = extract_field(FIELD_PATS["Owner"], block)
         labels_line = extract_field(FIELD_PATS["Labels"], block)
 
-        labels = [s.strip() for s in labels_line.split(",") if s.strip()] if labels_line else []
+        def clean_label(s: str) -> str:
+            s = s.strip()
+            # remove trailing punctuation
+            while s and s[-1] in ".,;:":
+                s = s[:-1]
+                s = s.strip()
+            return s
+
+        labels = [clean_label(s) for s in labels_line.split(",") if s.strip()] if labels_line else []
         milestone = None
         for m in ["M1", "M2", "M3", "M4", "M5", "M6"]:
             if m in labels:

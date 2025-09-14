@@ -28,22 +28,23 @@ def run(cmd: List[str]) -> None:
     subprocess.check_call(cmd, cwd=ROOT)
 
 
-def ensure_labels(labels: List[str]) -> None:
+def ensure_labels(labels: List[str], gh_repo: str) -> None:
     for lbl in labels:
         # Create if not exists; ignore errors
         try:
-            run(["gh", "label", "create", lbl, "--color", "ededed", "--description", lbl])
+            run(["gh", "label", "create", lbl, "--color", "ededed", "--description", lbl, "--repo", gh_repo])
         except subprocess.CalledProcessError:
+            # Might already exist
             pass
 
 
-def ensure_milestones(milestones: List[Dict[str, Any]]) -> Dict[str, int]:
+def ensure_milestones(milestones: List[Dict[str, Any]], gh_repo: str) -> Dict[str, int]:
     name_to_number: Dict[str, int] = {}
     for ms in milestones:
         title = ms["title"]
         due_on = ms.get("due_on")
-        # Try to create
-        args = ["gh", "api", "-X", "POST", f"repos/${{GH_REPO}}/milestones", "-f", f"title={title}"]
+        # Try to create (scoped to repo)
+        args = ["gh", "api", "-X", "POST", f"repos/{gh_repo}/milestones", "-f", f"title={title}"]
         if due_on:
             args += ["-f", f"due_on={due_on}"]
         try:
@@ -52,7 +53,7 @@ def ensure_milestones(milestones: List[Dict[str, Any]]) -> Dict[str, int]:
             name_to_number[title] = num
         except subprocess.CalledProcessError:
             # Fetch existing
-            out = subprocess.check_output(["gh", "api", f"repos/${{GH_REPO}}/milestones"], cwd=ROOT)
+            out = subprocess.check_output(["gh", "api", f"repos/{gh_repo}/milestones"], cwd=ROOT)
             existing = json.loads(out.decode("utf-8"))
             for e in existing:
                 if e.get("title") == title:
@@ -61,16 +62,26 @@ def ensure_milestones(milestones: List[Dict[str, Any]]) -> Dict[str, int]:
     return name_to_number
 
 
-def create_issue(ticket: Dict[str, Any], milestone_number: int | None) -> None:
+def create_issue(ticket: Dict[str, Any], milestone_number: int | None, gh_repo: str) -> None:
     title = ticket["title"]
     body = ticket.get("body") or ""
     labels = ticket.get("labels", [])
-    cmd = ["gh", "issue", "create", "--title", title, "--body", body]
+    cmd = ["gh", "issue", "create", "--title", title, "--body", body, "--repo", gh_repo]
     for lbl in labels:
         cmd += ["--label", lbl]
-    if milestone_number is not None:
-        cmd += ["--milestone", str(milestone_number)]
+    # gh issue create expects milestone TITLE, not number; use the ticket's milestone label as title
+    milestone_title = ticket.get("milestone")
+    if milestone_title:
+        cmd += ["--milestone", milestone_title]
     run(cmd)
+
+
+def is_logged_in() -> bool:
+    try:
+        subprocess.check_call(["gh", "auth", "status"], cwd=ROOT)
+        return True
+    except subprocess.CalledProcessError:
+        return False
 
 
 def main() -> None:
@@ -92,16 +103,17 @@ def main() -> None:
     labels = json.load(open(labels_path, "r", encoding="utf-8"))
     milestones = json.load(open(milestones_path, "r", encoding="utf-8"))
 
-    # Scope GH_REPO for gh cli
-    os.environ["GH_REPO"] = gh_repo
+    if not is_logged_in():
+        print("GitHub CLI is not authenticated. Please run: gh auth login -w (choose HTTPS, grant repo scope)", file=sys.stderr)
+        sys.exit(1)
 
-    ensure_labels(labels)
-    name_to_number = ensure_milestones(milestones)
+    ensure_labels(labels, gh_repo)
+    name_to_number = ensure_milestones(milestones, gh_repo)
 
     # Create issues
     for t in tickets:
         milestone_number = name_to_number.get(t.get("milestone") or "")
-        create_issue(t, milestone_number)
+        create_issue(t, milestone_number, gh_repo)
 
     print(f"Published {len(tickets)} issues to {gh_repo}.")
 
