@@ -1,0 +1,6 @@
+defaults:
+  - _self_
+
+seed: 123
+precision: float32
+log_dir: logs
