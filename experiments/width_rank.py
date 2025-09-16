@@ -1,4 +1,5 @@
 import json
+import argparse
 import numpy as np
 from typing import List, Dict
 
@@ -45,8 +46,26 @@ def run_width_rank(
 
 
 def main():
+	parser = argparse.ArgumentParser()
+	parser.add_argument("--plot", action="store_true")
+	parser.add_argument("--out", type=str, default="figures/width_rank.png")
+	args = parser.parse_args()
 	res = run_width_rank()
 	print(json.dumps(res))
+	if args.plot:
+		try:
+			import matplotlib.pyplot as plt
+			ms = res["m"]
+			errs = res["pred_err"]
+			plt.figure()
+			plt.plot(ms, errs, marker='o')
+			plt.xlabel('width m (rank of sketch)')
+			plt.ylabel('prediction error vs oracle')
+			plt.title('Width–rank empirical')
+			plt.tight_layout()
+			plt.savefig(args.out, dpi=150)
+		except Exception:
+			pass
 
 
 if __name__ == "__main__":

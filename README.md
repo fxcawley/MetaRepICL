@@ -23,6 +23,23 @@ See `PROJECT_PLAN.md` for epics and tickets. Issues are pre-seeded from that pla
 - `docs/` proofs, masking, compute budgets, anonymity checklist
 - `.github/workflows/` CI and packaging checks
 
+## How to run (MVP targets)
+
+- Baselines (ridge oracle vs GD-ICL; prints mean±CI over seeds):
+  - `make baselines`
+- Width–rank (rank-m sketch via random projection; saves a plot to `figures/width_rank.png`):
+  - `make width_rank`
+- Softmax Route A minimal (exp-kernel KRR vs attention-induced kernel diagnostics):
+  - `make route_a`
+
+### What these validate
+
+- Baselines check our harness and serve as reference performance.
+- Width–rank validates the spectral-tail prediction: as width m increases, prediction approaches the oracle; we also log effective dimension `d_eff(λ)` per plan.
+- Route A MVP demonstrates the exponential-kernel bridge and reports operator-norm proximity `‖K̃−K_exp‖₂` on supports.
+
+These are the first public-facing artifacts to sanity-check Aim 1–2 assumptions and guide hyperparameters for the full ICL prompts and probes.
+
 ## Contribution and privacy
 
 - Double-blind policy (AISTATS): do not push author-identifying artifacts to public before decisions. Use anonymized branches if needed.
