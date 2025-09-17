@@ -31,12 +31,15 @@ See `PROJECT_PLAN.md` for epics and tickets. Issues are pre-seeded from that pla
   - `make width_rank`
 - Softmax Route A minimal (exp-kernel KRR vs attention-induced kernel diagnostics):
   - `make route_a`
+- Preconditioner ablation (diagonal P):
+  - `python experiments/precond.py`
 
 ### What these validate
 
 - Baselines check our harness and serve as reference performance.
 - Width–rank validates the spectral-tail prediction: as width m increases, prediction approaches the oracle; we also log effective dimension `d_eff(λ)` per plan.
 - Route A MVP demonstrates the exponential-kernel bridge and reports operator-norm proximity `‖K̃−K_exp‖₂` on supports.
+- Preconditioner shows improved convergence with simple diagonal/token-wise scaling, aligning with S2.
 
 These are the first public-facing artifacts to sanity-check Aim 1–2 assumptions and guide hyperparameters for the full ICL prompts and probes.
 
