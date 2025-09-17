@@ -31,6 +31,8 @@ See `PROJECT_PLAN.md` for epics and tickets. Issues are pre-seeded from that pla
   - `make width_rank`
 - Softmax Route A minimal (exp-kernel KRR vs attention-induced kernel diagnostics):
   - `make route_a` or `python experiments/route_a_minimal.py --plot`
+- Route A end-to-end (single query prediction):
+  - `python experiments/route_a_end2end.py`
 - Preconditioner ablation (diagonal P):
   - `python experiments/precond.py`
 - Knob sweeps (λ, κ via conditioning, t, m):
@@ -41,6 +43,7 @@ See `PROJECT_PLAN.md` for epics and tickets. Issues are pre-seeded from that pla
 - Baselines check our harness and serve as reference performance.
 - Width–rank validates the spectral-tail prediction: as width m increases, prediction approaches the oracle; we also log effective dimension `d_eff(λ)` per plan.
 - Route A MVP demonstrates the exponential-kernel bridge and reports operator-norm proximity `‖K̃−K_exp‖₂` on supports.
+- Route A end-to-end produces a concrete query prediction matching the exponential-kernel KRR.
 - Preconditioner shows improved convergence with simple diagonal/token-wise scaling, aligning with S2.
 - Knob sweeps produce the scaling plots used in the paper.
 
