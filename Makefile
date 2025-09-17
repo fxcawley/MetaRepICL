@@ -1,6 +1,6 @@
 PY=python
 
-.PHONY: baselines width_rank route_a smoke
+.PHONY: baselines width_rank route_a route_a_plot smoke
 
 baselines:
 	$(PY) experiments/run_eval.py --target baselines
@@ -10,6 +10,9 @@ width_rank:
 
 route_a:
 	$(PY) experiments/run_eval.py --target route_a
+
+route_a_plot:
+	$(PY) experiments/route_a_minimal.py --plot
 
 smoke:
 	$(PY) - << 'PY'
