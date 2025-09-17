@@ -1,28 +1,15 @@
 import json
 import numpy as np
 from typing import Dict
+from src.lat.cg_stack import run_cg_with_history
 
 
 def generate_cg_states(n: int = 64, p: int = 16, steps: int = 4, seed: int = 123):
 	rng = np.random.default_rng(seed)
 	phi = rng.standard_normal((n, p)).astype(np.float64)
-	K = phi @ phi.T
 	y = rng.standard_normal(n).astype(np.float64)
-	alpha = np.zeros(n, dtype=np.float64)
-	r = y.copy()
-	pvec = r.copy()
-	states = []
-	for _ in range(steps):
-		Ap = K @ pvec + 1e-1 * pvec
-		rr = float(r @ r)
-		pAp = float(pvec @ Ap)
-		gamma = rr / (pAp + 1e-18)
-		alpha = alpha + gamma * pvec
-		r = r - gamma * Ap
-		rr_next = float(r @ r)
-		beta = rr_next / (rr + 1e-18)
-		pvec = r + beta * pvec
-		states.append((alpha.copy(), r.copy(), pvec.copy()))
+	hist = run_cg_with_history(phi, y, lam=1e-1, t=steps)
+	states = hist
 	# Fake activations: true embedding carries a linear map of (alpha,r,p);
 	# control embedding is random unrelated noise
 	W_true = rng.standard_normal((3 * n, 3 * n))
