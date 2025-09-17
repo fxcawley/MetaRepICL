@@ -30,7 +30,7 @@ See `PROJECT_PLAN.md` for epics and tickets. Issues are pre-seeded from that pla
 - Width–rank (rank-m sketch via random projection; saves a plot to `figures/width_rank.png`):
   - `make width_rank`
 - Softmax Route A minimal (exp-kernel KRR vs attention-induced kernel diagnostics):
-  - `make route_a`
+  - `make route_a` or `python experiments/route_a_minimal.py --plot`
 - Preconditioner ablation (diagonal P):
   - `python experiments/precond.py`
 
