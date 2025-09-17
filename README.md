@@ -30,13 +30,19 @@ See `PROJECT_PLAN.md` for epics and tickets. Issues are pre-seeded from that pla
 - Width–rank (rank-m sketch via random projection; saves a plot to `figures/width_rank.png`):
   - `make width_rank`
 - Softmax Route A minimal (exp-kernel KRR vs attention-induced kernel diagnostics):
-  - `make route_a`
+  - `make route_a` or `python experiments/route_a_minimal.py --plot`
+- Preconditioner ablation (diagonal P):
+  - `python experiments/precond.py`
+- Knob sweeps (λ, κ via conditioning, t, m):
+  - `python experiments/sweeps/knobs.py`
 
 ### What these validate
 
 - Baselines check our harness and serve as reference performance.
 - Width–rank validates the spectral-tail prediction: as width m increases, prediction approaches the oracle; we also log effective dimension `d_eff(λ)` per plan.
 - Route A MVP demonstrates the exponential-kernel bridge and reports operator-norm proximity `‖K̃−K_exp‖₂` on supports.
+- Preconditioner shows improved convergence with simple diagonal/token-wise scaling, aligning with S2.
+- Knob sweeps produce the scaling plots used in the paper.
 
 These are the first public-facing artifacts to sanity-check Aim 1–2 assumptions and guide hyperparameters for the full ICL prompts and probes.
 
