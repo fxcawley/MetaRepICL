@@ -1,5 +1,6 @@
 import json
 import math
+import argparse
 from typing import Dict
 
 import numpy as np
@@ -35,25 +36,23 @@ def run_route_a_minimal(
 	A = K_exp_ss + lam * torch.eye(n_support, dtype=torch.float64)
 	alpha = torch.linalg.solve(A, y_s)
 	f_oracle = (K_exp_sq.T @ alpha)  # (nq,)
-	# Attention-induced kernel via softmax rows, scaled back by row sums (per Row: Z_j)
+	# Softmax smoother baseline (normalized kernel smoother)
+	W = torch.softmax(S_sq, dim=0)  # normalize across supports for each query
+	f_softmax = (W.T @ y_s)
+	# Operator-norm proximity of support kernels
 	softmax_rows = torch.softmax(S_ss, dim=1)
-	row_sums = torch.sum(torch.exp(S_ss), dim=1, keepdim=True)  # Z_j per row
-	K_from_softmax = softmax_rows * row_sums  # equals exp(S_ss)
+	row_sums = torch.sum(torch.exp(S_ss), dim=1, keepdim=True)  # Z_i per row
+	K_from_softmax = softmax_rows * row_sums  # reconstruct exp(S_ss)
 	op_norm_diff = torch.linalg.norm(K_from_softmax - K_exp_ss, ord=2).item()
-	# Predict using the same exponential kernel vector for queries
-	softmax_sq = torch.softmax(S_sq, dim=0)  # column-softmax is not used; use logits directly for exp
-	# For queries, reconstruct exp from logits directly
-	f_model = f_oracle.clone()  # identical in this construction
-	# Evaluate against a ground-truth function (simulate targets for queries)
-	# Use linear function of φ_q for evaluation
+	# Targets for evaluation: use a linear function of φ_q for ground-truth y
 	w_true = torch.randn(p, dtype=torch.float64)
 	y_q_true = (phi_q @ w_true) + noise * torch.randn(n_query, dtype=torch.float64)
-	rmse_oracle = float(torch.sqrt(torch.mean((f_oracle - y_q_true) ** 2)))
-	rmse_model = float(torch.sqrt(torch.mean((f_model - y_q_true) ** 2)))
+	def rmse(pred: torch.Tensor) -> float:
+		return float(torch.sqrt(torch.mean((pred - y_q_true) ** 2)))
 	return {
-		"rmse_oracle": rmse_oracle,
-		"rmse_model": rmse_model,
-		"rmse_diff": abs(rmse_oracle - rmse_model),
+		"rmse_oracle": rmse(f_oracle),
+		"rmse_softmax": rmse(f_softmax),
+		"rmse_gap": abs(rmse(f_oracle) - rmse(f_softmax)),
 		"op_norm_diff": float(op_norm_diff),
 		"tau": float(tau),
 		"lambda": float(lam),
@@ -61,8 +60,25 @@ def run_route_a_minimal(
 
 
 def main():
+	parser = argparse.ArgumentParser()
+	parser.add_argument("--plot", action="store_true")
+	parser.add_argument("--out", type=str, default="figures/route_a_mvp.png")
+	args = parser.parse_args()
 	res = run_route_a_minimal()
 	print(json.dumps(res))
+	if args.plot:
+		try:
+			import matplotlib.pyplot as plt
+			# simple bar plot of RMSEs
+			vals = [res["rmse_oracle"], res["rmse_softmax"]]
+			labels = ["oracle", "softmax"]
+			plt.figure()
+			plt.bar(labels, vals)
+			plt.title("Route A MVP RMSE")
+			plt.tight_layout()
+			plt.savefig(args.out, dpi=150)
+		except Exception:
+			pass
 
 
 if __name__ == "__main__":

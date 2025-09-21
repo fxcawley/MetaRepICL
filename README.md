@@ -36,6 +36,7 @@ See `PROJECT_PLAN.md` for epics and tickets. Issues are pre-seeded from that pla
 - Knob sweeps (λ, κ via conditioning, t, m):
   - `python experiments/sweeps/knobs.py`
 
+
 ### What these validate
 
 - Baselines check our harness and serve as reference performance.
@@ -43,6 +44,7 @@ See `PROJECT_PLAN.md` for epics and tickets. Issues are pre-seeded from that pla
 - Route A MVP demonstrates the exponential-kernel bridge and reports operator-norm proximity `‖K̃−K_exp‖₂` on supports.
 - Preconditioner shows improved convergence with simple diagonal/token-wise scaling, aligning with S2.
 - Knob sweeps produce the scaling plots used in the paper.
+
 
 These are the first public-facing artifacts to sanity-check Aim 1–2 assumptions and guide hyperparameters for the full ICL prompts and probes.
 
