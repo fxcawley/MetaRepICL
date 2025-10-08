@@ -5,6 +5,8 @@ from typing import Dict
 
 import numpy as np
 import torch
+from omegaconf import DictConfig
+import hydra
 
 def run_route_a_minimal(
 	seed: int = 123,
@@ -59,12 +61,22 @@ def run_route_a_minimal(
 	}
 
 
-def main():
+@hydra.main(config_path="../configs", config_name="route_a", version_base=None)
+def main(cfg: DictConfig) -> None:
 	parser = argparse.ArgumentParser()
 	parser.add_argument("--plot", action="store_true")
 	parser.add_argument("--out", type=str, default="figures/route_a_mvp.png")
-	args = parser.parse_args()
-	res = run_route_a_minimal()
+	args, _ = parser.parse_known_args()
+	res = run_route_a_minimal(
+		seed=int(cfg.get("seed", 123)),
+		n_support=int(cfg.get("n_support", 48)),
+		n_query=int(cfg.get("n_query", 32)),
+		p=int(cfg.get("p", 16)),
+		d_proj=int(cfg.get("d_proj", 12)),
+		tau=float(cfg.get("tau", 0.5)),
+		lam=float(cfg.get("lambda", 1e-2)),
+		noise=float(cfg.get("noise", 0.1)),
+	)
 	print(json.dumps(res))
 	if args.plot:
 		try:

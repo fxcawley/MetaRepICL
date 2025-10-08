@@ -12,7 +12,7 @@ route_a:
 	$(PY) experiments/run_eval.py --target route_a
 
 route_a_plot:
-	$(PY) experiments/route_a_minimal.py --plot
+	$(PY) experiments/route_a_minimal.py --plot hydra.run.dir=.
 
 smoke:
 	$(PY) - << 'PY'

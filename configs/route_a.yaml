@@ -1,0 +1,25 @@
+defaults:
+  - _self_
+
+# Base seed (can be overridden per run)
+seed: 123
+
+# Route A experiment parameters
+n_support: 48
+n_query: 32
+p: 16
+d_proj: 12
+tau: 0.5
+lambda: 0.01
+noise: 0.1
+
+# Aggregation seeds for eval (used by run_eval)
+seeds: [123, 456, 789]
+
+# Tracking toggle (not wired in this script yet)
+wandb:
+  enabled: false
+  mode: offline
+  project: metarep
+
+
