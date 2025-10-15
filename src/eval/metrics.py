@@ -1,4 +1,5 @@
 from typing import List, Dict
+import math
 import numpy as np
 
 
@@ -6,12 +7,28 @@ def rmse(y_true: np.ndarray, y_pred: np.ndarray) -> float:
 	return float(np.sqrt(np.mean((y_true - y_pred) ** 2)))
 
 
-def mean_ci(values: List[float], alpha: float = 0.05) -> Dict[str, float]:
+def mean_ci(values: List[float], alpha: float = 0.05, use_t: bool = True) -> Dict[str, float]:
 	x = np.array(values, dtype=np.float64)
 	m = float(np.mean(x))
-	s = float(np.std(x, ddof=1)) if len(x) > 1 else 0.0
 	n = len(x)
-	# normal approx for brevity; replace with t-dist if needed
-	z = 1.96 if alpha == 0.05 else 1.96
-	ci = z * (s / np.sqrt(max(n, 1))) if n > 1 else 0.0
-	return {"mean": m, "ci": ci, "n": n}
+	if n <= 1:
+		return {"mean": m, "ci": 0.0, "n": n}
+	s = float(np.std(x, ddof=1))
+	if use_t:
+		try:
+			from scipy import stats
+			t_val = float(stats.t.ppf(1 - alpha / 2.0, df=n - 1))
+			scale = t_val
+		except ImportError:
+			raise RuntimeError("scipy is required for use_t=True in mean_ci")
+	else:
+		if alpha == 0.05:
+			scale = 1.96
+		else:
+			try:
+				from scipy.stats import norm
+				scale = float(norm.ppf(1 - alpha / 2.0))
+			except ImportError:
+				raise RuntimeError("scipy is required for non-0.05 alpha when use_t=False")
+	ci = scale * (s / math.sqrt(n))
+	return {"mean": m, "ci": float(ci), "n": n}

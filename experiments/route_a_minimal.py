@@ -5,8 +5,6 @@ from typing import Dict
 
 import numpy as np
 import torch
-from omegaconf import DictConfig
-import hydra
 
 def run_route_a_minimal(
 	seed: int = 123,
@@ -19,7 +17,7 @@ def run_route_a_minimal(
 	noise: float = 0.1,
 ) -> Dict[str, float]:
 	torch.manual_seed(seed)
-	rng = np.random.default_rng(seed)
+	np.random.seed(seed)
 	# Features φ for supports and queries
 	phi_s = torch.randn(n_support, p, dtype=torch.float64)
 	phi_q = torch.randn(n_query, p, dtype=torch.float64)
@@ -61,21 +59,28 @@ def run_route_a_minimal(
 	}
 
 
-@hydra.main(config_path="../configs", config_name="route_a", version_base=None)
-def main(cfg: DictConfig) -> None:
+def main():
 	parser = argparse.ArgumentParser()
 	parser.add_argument("--plot", action="store_true")
 	parser.add_argument("--out", type=str, default="figures/route_a_mvp.png")
-	args, _ = parser.parse_known_args()
+	parser.add_argument("--seed", type=int, default=123)
+	parser.add_argument("--n-support", dest="n_support", type=int, default=48)
+	parser.add_argument("--n-query", dest="n_query", type=int, default=32)
+	parser.add_argument("--p", type=int, default=16)
+	parser.add_argument("--d-proj", dest="d_proj", type=int, default=12)
+	parser.add_argument("--tau", type=float, default=0.5)
+	parser.add_argument("--lambda", dest="lam", type=float, default=1e-2)
+	parser.add_argument("--noise", type=float, default=0.1)
+	args = parser.parse_args()
 	res = run_route_a_minimal(
-		seed=int(cfg.get("seed", 123)),
-		n_support=int(cfg.get("n_support", 48)),
-		n_query=int(cfg.get("n_query", 32)),
-		p=int(cfg.get("p", 16)),
-		d_proj=int(cfg.get("d_proj", 12)),
-		tau=float(cfg.get("tau", 0.5)),
-		lam=float(cfg.get("lambda", 1e-2)),
-		noise=float(cfg.get("noise", 0.1)),
+		seed=args.seed,
+		n_support=args.n_support,
+		n_query=args.n_query,
+		p=args.p,
+		d_proj=args.d_proj,
+		tau=args.tau,
+		lam=args.lam,
+		noise=args.noise,
 	)
 	print(json.dumps(res))
 	if args.plot:
