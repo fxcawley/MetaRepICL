@@ -17,7 +17,7 @@ def run_route_a_minimal(
 	noise: float = 0.1,
 ) -> Dict[str, float]:
 	torch.manual_seed(seed)
-	rng = np.random.default_rng(seed)
+	np.random.seed(seed)
 	# Features φ for supports and queries
 	phi_s = torch.randn(n_support, p, dtype=torch.float64)
 	phi_q = torch.randn(n_query, p, dtype=torch.float64)
@@ -63,8 +63,25 @@ def main():
 	parser = argparse.ArgumentParser()
 	parser.add_argument("--plot", action="store_true")
 	parser.add_argument("--out", type=str, default="figures/route_a_mvp.png")
+	parser.add_argument("--seed", type=int, default=123)
+	parser.add_argument("--n-support", dest="n_support", type=int, default=48)
+	parser.add_argument("--n-query", dest="n_query", type=int, default=32)
+	parser.add_argument("--p", type=int, default=16)
+	parser.add_argument("--d-proj", dest="d_proj", type=int, default=12)
+	parser.add_argument("--tau", type=float, default=0.5)
+	parser.add_argument("--lambda", dest="lam", type=float, default=1e-2)
+	parser.add_argument("--noise", type=float, default=0.1)
 	args = parser.parse_args()
-	res = run_route_a_minimal()
+	res = run_route_a_minimal(
+		seed=args.seed,
+		n_support=args.n_support,
+		n_query=args.n_query,
+		p=args.p,
+		d_proj=args.d_proj,
+		tau=args.tau,
+		lam=args.lam,
+		noise=args.noise,
+	)
 	print(json.dumps(res))
 	if args.plot:
 		try:

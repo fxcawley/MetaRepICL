@@ -8,7 +8,7 @@ def test_negative_control_probe_behavior():
 	for (a, r, p) in states:
 		target.append(np.concatenate([a, r, p]))
 	target = np.array(target)
-	cos_true = fit_linear_probe(acts_true, target.flatten())
-	cos_ctrl = fit_linear_probe(acts_ctrl, target.flatten())
+	cos_true = fit_linear_probe(acts_true, target)
+	cos_ctrl = fit_linear_probe(acts_ctrl, target)
 	assert cos_true > 0.9
 	assert cos_ctrl < 0.3
