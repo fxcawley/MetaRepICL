@@ -1,0 +1,12 @@
+defaults:
+  - _self_
+
+name: synth_linear
+seed: 123
+n_support: 48
+n_query: 32
+p: 16
+noise: 0.1
+lambda: 0.01
+
+

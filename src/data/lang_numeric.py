@@ -94,3 +94,65 @@ def make_lang_numeric_dataset(
         
     return docs_s, np.array(ys), docs_q, np.array(yq)
 
+
+def load_dataset_from_csv(
+    csv_path: str,
+    n_support: int,
+    n_query: int,
+    seed: int = 123
+) -> Tuple[List[str], np.ndarray, List[str], np.ndarray]:
+    """
+    Load a dataset from a CSV file (text,label).
+    Shuffles and splits into support and query sets.
+    """
+    import csv
+    rng = np.random.default_rng(seed)
+    
+    docs = []
+    labels = []
+    
+    with open(csv_path, 'r', encoding='utf-8') as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            docs.append(row['text'])
+            try:
+                labels.append(float(row['label']))
+            except ValueError:
+                # Fallback for non-numeric labels? Or just skip?
+                continue
+                
+    # Shuffle
+    indices = np.arange(len(docs))
+    rng.shuffle(indices)
+    
+    docs = [docs[i] for i in indices]
+    labels = np.array(labels)[indices]
+    
+    # Check sizes
+    if len(docs) < n_support + n_query:
+        # If not enough data, loop/duplicate or just warn?
+        # For now, let's just take what we have and split proportionally if needed,
+        # or error out.
+        # Let's just use modulo indexing to fill up if requested more than available
+        # (Common in ICL research to just sample from pool)
+        
+        full_indices = np.arange(len(docs))
+        sampled_indices = rng.choice(full_indices, size=n_support + n_query, replace=True)
+        
+        docs_sampled = [docs[i] for i in sampled_indices]
+        labels_sampled = labels[sampled_indices]
+        
+        return (
+            docs_sampled[:n_support], 
+            labels_sampled[:n_support],
+            docs_sampled[n_support:],
+            labels_sampled[n_support:]
+        )
+        
+    return (
+        docs[:n_support],
+        labels[:n_support],
+        docs[n_support:n_support+n_query],
+        labels[n_support:n_support+n_query]
+    )
+

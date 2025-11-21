@@ -1,0 +1,10 @@
+defaults:
+  - _self_
+
+name: route_a_head
+dimension: 16
+d_proj: 12
+tau: 0.5
+lambda: 0.01
+
+

@@ -1,0 +1,9 @@
+defaults:
+  - _self_
+
+wandb:
+  enabled: false
+  mode: offline
+  project: metarep
+
+

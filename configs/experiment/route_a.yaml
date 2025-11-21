@@ -1,0 +1,10 @@
+defaults:
+  - _self_
+
+target: route_a
+seeds: [123, 456, 789]
+plot: false
+metrics:
+  alpha: 0.05
+  use_t: true
+
