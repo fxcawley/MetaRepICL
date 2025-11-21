@@ -35,6 +35,7 @@ try:
 	from experiments.route_a_end2end import route_a_end2end
 	from experiments.route_b_approx import run_cg_route_b
 	from experiments.probes.state_probes import run_probes
+	from experiments.real_data_eval import run_real_data_eval
 except ImportError:
 	from baselines.ridge_oracle import run_ridge_oracle
 	from baselines.gd_icl import run_gd_icl
@@ -44,6 +45,7 @@ except ImportError:
 	from route_a_end2end import route_a_end2end
 	from route_b_approx import run_cg_route_b
 	from probes.state_probes import run_probes
+	from real_data_eval import run_real_data_eval
 
 from src.eval.metrics import mean_ci
 
@@ -53,7 +55,7 @@ def main(cfg: DictConfig) -> None:
 	parser = argparse.ArgumentParser()
 	# Define args for help message generation and manual parsing fallback
 	parser.add_argument("--target", type=str, default="baselines", 
-		choices=["baselines", "width_rank", "route_a", "precond", "end2end", "route_b", "probes"])
+		choices=["baselines", "width_rank", "route_a", "precond", "end2end", "route_b", "probes", "real_data"])
 	parser.add_argument("--plot", action="store_true")
 	
 	# Parse known args for backward compatibility if provided via CLI flags directly
@@ -192,6 +194,21 @@ def main(cfg: DictConfig) -> None:
 			steps=int(cfg.get("steps", 4))
 		)
 		print(json.dumps(res))
+	elif target == "real_data":
+		cwd = Path(__file__).resolve().parent
+		repo_root = cwd.parent
+		data_path = repo_root / "data" / "sentiment.csv"
+		
+		if not data_path.exists():
+			print(f"Error: Data file not found at {data_path}")
+		else:
+			res = run_real_data_eval(
+				str(data_path),
+				n_support=int(cfg.get("n_support", 8)),
+				n_query=int(cfg.get("n_query", 4)),
+				seed=int(cfg.get("seed", 123))
+			)
+			print(json.dumps(res))
 
 
 if __name__ == "__main__":
