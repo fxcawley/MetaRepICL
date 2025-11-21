@@ -33,6 +33,8 @@ try:
 	from experiments.width_rank import run_width_rank
 	from experiments.precond import run_precond
 	from experiments.route_a_end2end import route_a_end2end
+	from experiments.route_b_approx import run_cg_route_b
+	from experiments.probes.state_probes import run_probes
 except ImportError:
 	from baselines.ridge_oracle import run_ridge_oracle
 	from baselines.gd_icl import run_gd_icl
@@ -40,6 +42,8 @@ except ImportError:
 	from width_rank import run_width_rank
 	from precond import run_precond
 	from route_a_end2end import route_a_end2end
+	from route_b_approx import run_cg_route_b
+	from probes.state_probes import run_probes
 
 from src.eval.metrics import mean_ci
 
@@ -49,7 +53,7 @@ def main(cfg: DictConfig) -> None:
 	parser = argparse.ArgumentParser()
 	# Define args for help message generation and manual parsing fallback
 	parser.add_argument("--target", type=str, default="baselines", 
-		choices=["baselines", "width_rank", "route_a", "precond", "end2end"])
+		choices=["baselines", "width_rank", "route_a", "precond", "end2end", "route_b", "probes"])
 	parser.add_argument("--plot", action="store_true")
 	
 	# Parse known args for backward compatibility if provided via CLI flags directly
@@ -151,6 +155,7 @@ def main(cfg: DictConfig) -> None:
 			p=int(cfg.get("p", 32)),
 			lam=float(cfg.get("lambda", 1e-2)),
 			t=int(cfg.get("steps", 8)),
+			cond=float(cfg.get("cond", 100.0)) # Default to ill-conditioned to show effect
 		)
 		print(json.dumps(res))
 	elif target == "end2end":
@@ -161,6 +166,30 @@ def main(cfg: DictConfig) -> None:
 			d_proj=int(cfg.get("d_proj", 12)),
 			tau=float(cfg.get("tau", 0.5)),
 			lam=float(cfg.get("lambda", 1e-2)),
+		)
+		print(json.dumps(res))
+	elif target == "route_b":
+		import numpy as np
+		seed = int(cfg.get("seed", 123))
+		rng = np.random.default_rng(seed)
+		n = int(cfg.get("n_support", 64))
+		p = int(cfg.get("p", 16))
+		lam = float(cfg.get("lambda", 1e-2))
+		epsilon = float(cfg.get("epsilon", 1e-4))
+		
+		phi = rng.standard_normal((n, p))
+		phi -= phi.mean(axis=0)
+		y = rng.standard_normal(n)
+		y -= y.mean()
+		
+		res = run_cg_route_b(phi, y, lam, t=int(cfg.get("steps", 5)), epsilon=epsilon)
+		print(json.dumps(res))
+	elif target == "probes":
+		res = run_probes(
+			seed=int(cfg.get("seed", 123)),
+			n=int(cfg.get("n_support", 64)),
+			p=int(cfg.get("p", 16)),
+			steps=int(cfg.get("steps", 4))
 		)
 		print(json.dumps(res))
 
