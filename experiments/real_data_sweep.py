@@ -51,7 +51,8 @@ def main(cfg: DictConfig):
     
     datasets = {
         "20news": repo_root / "data" / "20news_binary.csv",
-        "stsb": repo_root / "data" / "stsb_sample.csv"
+        "stsb": repo_root / "data" / "stsb_sample.csv",
+        "trec": repo_root / "data" / "trec_train.csv"
     }
     
     os.makedirs("figures/real_data", exist_ok=True)
@@ -68,6 +69,9 @@ def main(cfg: DictConfig):
         if name == "stsb":
             supports = [4, 8, 16, 20] # Small manual dataset
             n_query = 8
+        elif name == "trec":
+            supports = [4, 8, 16, 32, 64, 128, 256]
+            n_query = 64
         else:
             supports = [4, 8, 16, 32, 64, 128]
             n_query = 32
