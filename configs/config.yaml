@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 defaults:
   - dataset: synth_linear
   - model: route_a_head
@@ -10,17 +9,13 @@ seed: 123
 precision: float32
 device: cpu
 log_dir: logs
-<<<<<<< HEAD
+
+target: baselines
+plot: false
+
 metrics:
   alpha: 0.05
   use_t: true
-=======
-
-target: baselines
-plot: false
-
-metrics:
-  alpha: 0.05
 
 hydra:
   run:
@@ -28,30 +23,3 @@ hydra:
   sweep:
     dir: outputs/${now:%Y-%m-%d}/multirun
     subdir: ${hydra.job.num}
->>>>>>> 4ed538d (chore: remove temp test file)
-=======
-defaults:
-  - dataset: synth_linear
-  - model: route_a_head
-  - logging: offline
-  - experiment: route_a
-  - _self_
-
-seed: 123
-precision: float32
-device: cpu
-log_dir: logs
-
-target: baselines
-plot: false
-
-metrics:
-  alpha: 0.05
-
-hydra:
-  run:
-    dir: outputs/${now:%Y-%m-%d}/${now:%H-%M-%S}
-  sweep:
-    dir: outputs/${now:%Y-%m-%d}/multirun
-    subdir: ${hydra.job.num}
->>>>>>> 0f5f78e (Added some tests and dataset examples.)
