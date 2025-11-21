@@ -92,7 +92,9 @@ def main(cfg: DictConfig) -> None:
 		noise=float(cfg.get("noise", 0.1)),
 	)
 	print(json.dumps(res))
-	if args.plot:
+	
+	if cfg.get("plot", False):
+		out_path = cfg.get("out", "figures/route_a_mvp.png")
 		try:
 			import matplotlib.pyplot as plt
 			# simple bar plot of RMSEs
@@ -102,7 +104,9 @@ def main(cfg: DictConfig) -> None:
 			plt.bar(labels, vals)
 			plt.title("Route A MVP RMSE")
 			plt.tight_layout()
-			plt.savefig(args.out, dpi=150)
+			import os
+			os.makedirs(os.path.dirname(out_path), exist_ok=True)
+			plt.savefig(out_path, dpi=150)
 		except Exception:
 			pass
 
