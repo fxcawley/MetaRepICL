@@ -147,6 +147,11 @@ def run_route_a_ablation(seed=123, n=48, p=16, tau_list=None, lam=1e-2):
 
 @hydra.main(config_path="../../configs", config_name="config", version_base=None)
 def main(cfg: DictConfig):
+    # Parse extra args
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--plot", action="store_true")
+    args, _ = parser.parse_known_args()
+    
     seed = int(cfg.get("seed", 123))
     
     # 1. Route B Ablation (Epsilon Sweep)
@@ -160,7 +165,7 @@ def main(cfg: DictConfig):
     res_a = run_route_a_ablation(seed=seed, tau_list=tau_list)
     
     # Plotting
-    if cfg.get("plot", False) or True: # Always plot for now, or controlled by cfg
+    if args.plot or True: # Always plot for now
         os.makedirs("figures/ablations", exist_ok=True)
         
         # Plot B
