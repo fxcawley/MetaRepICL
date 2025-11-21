@@ -21,6 +21,7 @@ def generate_cg_states(n: int = 64, p: int = 16, steps: int = 32, seed: int = 12
 	return states, np.array(activations_true), np.array(activations_control)
 
 
+<<<<<<< HEAD
 def fit_linear_probe(
     X: np.ndarray,
     Y: np.ndarray,
@@ -67,6 +68,16 @@ def fit_linear_probe(
     if denom == 0:
         return 0.0
     return float((p_vec @ y_vec) / denom)
+=======
+def fit_linear_probe(X: np.ndarray, y: np.ndarray) -> float:
+	# Closed-form least squares; return cosine similarity between predictions and target
+	W = np.linalg.pinv(X) @ y
+	pred = X @ W
+	pred_flat = pred.flatten()
+	y_flat = y.flatten()
+	cos = float(np.dot(pred_flat, y_flat) / (np.linalg.norm(pred_flat) * np.linalg.norm(y_flat) + 1e-18))
+	return cos
+>>>>>>> c2a6055 (fix: Correct dimension mismatch in state probe tests and prevent overfitting in control)
 
 
 def main():
