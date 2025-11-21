@@ -6,6 +6,7 @@ from typing import Dict
 import numpy as np
 import torch
 
+
 def run_route_a_minimal(
 	seed: int = 123,
 	n_support: int = 48,

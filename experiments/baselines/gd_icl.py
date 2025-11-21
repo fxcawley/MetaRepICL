@@ -1,6 +1,7 @@
 import numpy as np
 from omegaconf import DictConfig
 import hydra
+
 from src.data.synth_linear import make_linear_dataset
 
 
@@ -16,22 +17,42 @@ def gd_linear_fit(Xs: np.ndarray, ys: np.ndarray, steps: int, lr: float, lam: fl
 	return w
 
 
+def run_gd_icl(
+	n_support: int = 32,
+	n_query: int = 32,
+	p: int = 16,
+	noise: float = 0.1,
+	steps: int = 200,
+	lr: float = 0.1,
+	lam: float = 1e-2,
+	seed: int = 123,
+) -> dict:
+	Xs, ys, Xq, yq = make_linear_dataset(
+		n_support=n_support,
+		n_query=n_query,
+		p=p,
+		noise=noise,
+		seed=seed,
+	)
+	w = gd_linear_fit(Xs, ys, steps=steps, lr=lr, lam=lam, seed=seed)
+	pred = Xq @ w
+	rmse = float(np.sqrt(np.mean((pred - yq) ** 2)))
+	return {"rmse": rmse, "steps": steps, "lr": lr, "lambda": lam, "seed": seed}
+
+
 @hydra.main(config_path="../../configs", config_name="config", version_base=None)
 def main(cfg: DictConfig) -> None:
-	Xs, ys, Xq, yq = make_linear_dataset(
+	res = run_gd_icl(
 		n_support=cfg.get("n_support", 32),
 		n_query=cfg.get("n_query", 32),
 		p=cfg.get("p", 16),
 		noise=cfg.get("noise", 0.1),
-		seed=cfg.seed,
+		steps=int(cfg.get("steps", 200)),
+		lr=float(cfg.get("lr", 0.1)),
+		lam=float(cfg.get("lambda", 1e-2)),
+		seed=int(cfg.seed),
 	)
-	steps = int(cfg.get("steps", 200))
-	lr = float(cfg.get("lr", 0.1))
-	lam = float(cfg.get("lambda", 1e-2))
-	w = gd_linear_fit(Xs, ys, steps=steps, lr=lr, lam=lam, seed=int(cfg.seed))
-	pred = Xq @ w
-	rmse = float(np.sqrt(np.mean((pred - yq) ** 2)))
-	print({"rmse": rmse, "steps": steps, "lr": lr, "lambda": lam, "seed": int(cfg.seed)})
+	print(res)
 
 
 if __name__ == "__main__":
