@@ -30,18 +30,33 @@ try:
 	from experiments.baselines.ridge_oracle import run_ridge_oracle
 	from experiments.baselines.gd_icl import run_gd_icl
 	from experiments.route_a_minimal import run_route_a_minimal
+	from experiments.width_rank import run_width_rank
+	from experiments.precond import run_precond
+	from experiments.route_a_end2end import route_a_end2end
 except ImportError:
 	from baselines.ridge_oracle import run_ridge_oracle
 	from baselines.gd_icl import run_gd_icl
 	from route_a_minimal import run_route_a_minimal
+	from width_rank import run_width_rank
+	from precond import run_precond
+	from route_a_end2end import route_a_end2end
 
 from src.eval.metrics import mean_ci
 
 
 @hydra.main(config_path="../configs", config_name="config", version_base=None)
 def main(cfg: DictConfig) -> None:
-	target = cfg.get("target", "baselines")
-	plot = bool(cfg.get("plot", False))
+	parser = argparse.ArgumentParser()
+	# Define args for help message generation and manual parsing fallback
+	parser.add_argument("--target", type=str, default="baselines", 
+		choices=["baselines", "width_rank", "route_a", "precond", "end2end"])
+	parser.add_argument("--plot", action="store_true")
+	
+	# Parse known args for backward compatibility if provided via CLI flags directly
+	args, _ = parser.parse_known_args()
+
+	target = cfg.get("target", args.target)
+	plot = bool(cfg.get("plot", args.plot))
 	metrics_cfg = cfg.get("metrics", {})
 	alpha = float(metrics_cfg.get("alpha", 0.05))
 
@@ -75,10 +90,32 @@ def main(cfg: DictConfig) -> None:
 			"gd_icl": mean_ci(gd_rmses, alpha=alpha),
 		})
 	elif target == "width_rank":
-		# Legacy subprocess call for width_rank until refactored
-		cmd = [sys.executable, str(repo_root / "experiments/width_rank.py")] + (["--plot"] if plot else [])
-		out = subprocess.check_output(cmd, cwd=str(repo_root))
-		print(json.loads(out.decode('utf-8').replace("'", '"')))
+		# Use proper function call
+		res = run_width_rank(
+			seed=int(cfg.get("seed", 123)),
+			n=int(cfg.get("n_support", 64)),
+			p=int(cfg.get("p", 32)),
+			lam=float(cfg.get("lambda", 1e-2)),
+			noise=float(cfg.get("noise", 0.1)),
+		)
+		print(json.dumps(res))
+		
+		if plot:
+			try:
+				import matplotlib.pyplot as plt
+				ms = res["m"]
+				errs = res["pred_err"]
+				plt.figure()
+				plt.plot(ms, errs, marker='o')
+				plt.xlabel('width m (rank of sketch)')
+				plt.ylabel('prediction error vs oracle')
+				plt.title('Width–rank empirical')
+				plt.tight_layout()
+				out_path = str(cfg.get("out", "figures/width_rank.png"))
+				plt.savefig(out_path, dpi=150)
+			except Exception:
+				pass
+
 	elif target == "route_a":
 		seeds = cfg.get("seeds", [123, 456, 789])
 		or_rmse = []
@@ -107,6 +144,25 @@ def main(cfg: DictConfig) -> None:
 			"op_norm_diff": mean_ci(op, alpha=alpha),
 			"n": len(seeds),
 		})
+	elif target == "precond":
+		res = run_precond(
+			seed=int(cfg.get("seed", 123)),
+			n=int(cfg.get("n_support", 128)),
+			p=int(cfg.get("p", 32)),
+			lam=float(cfg.get("lambda", 1e-2)),
+			t=int(cfg.get("steps", 8)),
+		)
+		print(json.dumps(res))
+	elif target == "end2end":
+		res = route_a_end2end(
+			seed=int(cfg.get("seed", 123)),
+			k=int(cfg.get("n_support", 32)),
+			p=int(cfg.get("p", 16)),
+			d_proj=int(cfg.get("d_proj", 12)),
+			tau=float(cfg.get("tau", 0.5)),
+			lam=float(cfg.get("lambda", 1e-2)),
+		)
+		print(json.dumps(res))
 
 
 if __name__ == "__main__":

@@ -1,5 +1,7 @@
 import json
 import numpy as np
+import hydra
+from omegaconf import DictConfig
 from src.lat.cg_stack import run_cg
 
 
@@ -30,8 +32,15 @@ def run_precond(seed: int = 123, n: int = 128, p: int = 32, lam: float = 1e-2, t
 	return {"err_un": errs_un, "err_pr": errs_pr}
 
 
-def main():
-	res = run_precond()
+@hydra.main(config_path="../configs", config_name="config", version_base=None)
+def main(cfg: DictConfig):
+	res = run_precond(
+		seed=int(cfg.get("seed", 123)),
+		n=int(cfg.get("n_support", 128)),
+		p=int(cfg.get("p", 32)),
+		lam=float(cfg.get("lambda", 1e-2)),
+		t=int(cfg.get("steps", 8)),
+	)
 	print(json.dumps(res))
 
 

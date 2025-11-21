@@ -2,6 +2,8 @@ import json
 import argparse
 import numpy as np
 from typing import List, Dict
+import hydra
+from omegaconf import DictConfig
 
 
 def effective_dimension(K: np.ndarray, lam: float) -> float:
@@ -45,14 +47,41 @@ def run_width_rank(
 	return {"m": ms, "pred_err": errs, "d_eff": deffs}
 
 
-def main():
+@hydra.main(config_path="../configs", config_name="config", version_base=None)
+def main(cfg: DictConfig):
 	parser = argparse.ArgumentParser()
 	parser.add_argument("--plot", action="store_true")
 	parser.add_argument("--out", type=str, default="figures/width_rank.png")
-	args = parser.parse_args()
-	res = run_width_rank()
+	
+	# Handle arguments: if --plot passed in sys.argv, we want to respect it.
+	# But Hydra consumes args.
+	# Simple hack: rely on cfg or just check known args manually if mixed.
+	# Better: use cfg for everything.
+	# We will support both for backward compat with manual invocation,
+	# but typically with hydra we should use `plot=True` overrides.
+	
+	# Since we are using Hydra, let's prefer cfg values.
+	plot = bool(cfg.get("plot", False))
+	out = str(cfg.get("out", "figures/width_rank.png"))
+	
+	# Also check argparse for direct invocation compatibility if users use flags
+	try:
+		args, _ = parser.parse_known_args()
+		if args.plot: plot = True
+		if args.out != "figures/width_rank.png": out = args.out
+	except Exception:
+		pass
+
+	res = run_width_rank(
+		seed=int(cfg.get("seed", 123)),
+		n=int(cfg.get("n_support", 64)),
+		p=int(cfg.get("p", 32)),
+		lam=float(cfg.get("lambda", 1e-2)),
+		noise=float(cfg.get("noise", 0.1)),
+	)
 	print(json.dumps(res))
-	if args.plot:
+	
+	if plot:
 		try:
 			import matplotlib.pyplot as plt
 			ms = res["m"]
@@ -63,7 +92,7 @@ def main():
 			plt.ylabel('prediction error vs oracle')
 			plt.title('Width–rank empirical')
 			plt.tight_layout()
-			plt.savefig(args.out, dpi=150)
+			plt.savefig(out, dpi=150)
 		except Exception:
 			pass
 

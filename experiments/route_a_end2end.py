@@ -2,6 +2,8 @@ import json
 import math
 import numpy as np
 import torch
+import hydra
+from omegaconf import DictConfig
 
 
 def route_a_end2end(seed: int = 123, k: int = 32, p: int = 16, d_proj: int = 12, tau: float = 0.5, lam: float = 1e-2):
@@ -33,8 +35,16 @@ def route_a_end2end(seed: int = 123, k: int = 32, p: int = 16, d_proj: int = 12,
 	}
 
 
-def main():
-	res = route_a_end2end()
+@hydra.main(config_path="../configs", config_name="route_a", version_base=None)
+def main(cfg: DictConfig):
+	res = route_a_end2end(
+		seed=int(cfg.get("seed", 123)),
+		k=int(cfg.get("n_support", 32)),
+		p=int(cfg.get("p", 16)),
+		d_proj=int(cfg.get("d_proj", 12)),
+		tau=float(cfg.get("tau", 0.5)),
+		lam=float(cfg.get("lambda", 1e-2)),
+	)
 	print(json.dumps(res))
 
 
