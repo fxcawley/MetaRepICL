@@ -197,7 +197,12 @@ def main(cfg: DictConfig) -> None:
 	elif target == "real_data":
 		cwd = Path(__file__).resolve().parent
 		repo_root = cwd.parent
-		data_path = repo_root / "data" / "sentiment.csv"
+		
+		path_str = cfg.get("data_path", "data/sentiment.csv")
+		if Path(path_str).is_absolute():
+			data_path = Path(path_str)
+		else:
+			data_path = repo_root / path_str
 		
 		if not data_path.exists():
 			print(f"Error: Data file not found at {data_path}")

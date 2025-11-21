@@ -91,16 +91,26 @@ def run_real_data_eval(
 
 @hydra.main(config_path="../configs", config_name="config", version_base=None)
 def main(cfg: DictConfig):
-    # Default to looking in data/
     cwd = Path(__file__).resolve().parent
-    # repo root is experiments/.. -> MetaRepICL/
     repo_root = cwd.parent
-    data_path = repo_root / "data" / "sentiment.csv"
+    
+    # Allow overriding data path
+    path_str = cfg.get("data_path", "data/sentiment.csv")
+    if Path(path_str).is_absolute():
+        data_path = Path(path_str)
+    else:
+        data_path = repo_root / path_str
     
     if not data_path.exists():
-        print(f"Data file not found at {data_path}")
-        return
+        # Fallback for legacy default location if not found
+        fallback = repo_root / "data" / "sentiment.csv"
+        if fallback.exists() and "data_path" not in cfg:
+            data_path = fallback
+        else:
+            print(f"Data file not found at {data_path}")
+            return
 
+    print(f"Evaluating on {data_path}...")
     res = run_real_data_eval(
         str(data_path),
         n_support=int(cfg.get("n_support", 8)),
