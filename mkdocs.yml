@@ -43,6 +43,7 @@ extra_javascript:
 
 nav:
   - Home: index.md
+  - "Walkthrough Demo": demo.md
   - "Project Status": status.md
   - Theory:
     - "Overview": theory/index.md
