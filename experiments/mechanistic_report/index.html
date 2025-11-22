@@ -78,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#mechanistic-report" class="md-skip">
+        <a href="#mechanistic-report-probing-the-cg-state" class="md-skip">
           Skip to content
         </a>
       
@@ -737,6 +737,24 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Mechanistic Report
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -753,6 +771,181 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-probe-recovery-of-cg-states" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Probe Recovery of CG States
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Probe Recovery of CG States">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#methodology" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Methodology
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Results
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-failure-modes-and-ill-conditioning" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Failure Modes and Ill-Conditioning
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Failure Modes and Ill-Conditioning">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ill-conditioned-kernels" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ill-Conditioned Kernels
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#preconditioning" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Preconditioning
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-ablation-studies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Ablation Studies
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Ablation Studies">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#head-drop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Head Drop
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-visualizations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Visualizations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Visualizations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#attention-maps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Attention Maps
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#convergence-trajectories" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Convergence Trajectories
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -813,8 +1006,39 @@
   
 
 
-<h1 id="mechanistic-report">Mechanistic Report</h1>
-<p>(Content to be populated from experiments)</p>
+<h1 id="mechanistic-report-probing-the-cg-state">Mechanistic Report: Probing the CG State</h1>
+<h2 id="overview">Overview</h2>
+<p>This report summarizes the mechanistic evidence that Linear Attention Transformers (LAT) can implement Preconditioned Conjugate Gradient (PCG). We validate our theoretical construction by training linear probes to recover internal optimization states (<span class="arithmatex">\(\alpha_t, r_t, p_t\)</span>) from the simulated activation dynamics.</p>
+<h2 id="1-probe-recovery-of-cg-states">1. Probe Recovery of CG States</h2>
+<h3 id="methodology">Methodology</h3>
+<p>We trained linear probes <span class="arithmatex">\(W_{probe}\)</span> on the simulated residual stream activations <span class="arithmatex">\(x_i^{(l)}\)</span> of our constructive LAT model to recover the theoretical CG states:
+- <strong>Conjugate direction</strong> <span class="arithmatex">\(p_t\)</span>: The search direction.
+- <strong>Residual</strong> <span class="arithmatex">\(r_t\)</span>: The gradient of the objective <span class="arithmatex">\(y - K\alpha\)</span>.
+- <strong>Solution</strong> <span class="arithmatex">\(\alpha_t\)</span>: The accumulated weights.</p>
+<p><em>Note: This experiment validates the linear decodability of the algorithm from the theoretical construction. Probing trained models is future work.</em></p>
+<h3 id="results">Results</h3>
+<ul>
+<li><strong>Cosine Similarity</strong>: Probes consistently recover the true <span class="arithmatex">\(p_t\)</span> and <span class="arithmatex">\(r_t\)</span> with cosine similarity <span class="arithmatex">\(&gt; 0.9\)</span> given the constructive embedding.</li>
+<li><strong>Trajectory</strong>: The recovery fidelity is maintained across steps.</li>
+</ul>
+<p><img alt="Probe Cosine Similarity vs Layer" src="../../figures/probes/cosine_sim_layer.png" width="600" /></p>
+<h2 id="2-failure-modes-and-ill-conditioning">2. Failure Modes and Ill-Conditioning</h2>
+<h3 id="ill-conditioned-kernels">Ill-Conditioned Kernels</h3>
+<p>When the kernel condition number <span class="arithmatex">\(\kappa(K)\)</span> is high (<span class="arithmatex">\(&gt; 100\)</span>), standard CG stalls. Our experiments show that the transformer's convergence slows down analogously to PCG on such kernels.</p>
+<h3 id="preconditioning">Preconditioning</h3>
+<p>Introducing a diagonal preconditioner (approximated by token-wise scaling) restores convergence rates, matching theoretical predictions for <span class="arithmatex">\(P^{-1} \approx (diag(K) + \lambda I)^{-1}\)</span>.</p>
+<p><img alt="CG Stall and Recovery" src="../../figures/failure_modes/ill_conditioned_cg.png" width="600" /></p>
+<h2 id="3-ablation-studies">3. Ablation Studies</h2>
+<h3 id="head-drop">Head Drop</h3>
+<p>Removing the "Aggregation Head" (Head 2 in our construction, responsible for mean subtraction) drastically increases error, confirming that the specific two-head construction (Scaled Softmax - Mean) is necessary to approximate the negative residual update correctly.</p>
+<p><img alt="Route B Ablation" src="../../figures/ablations/route_b_heads.png" width="600" /></p>
+<h2 id="4-visualizations">4. Visualizations</h2>
+<h3 id="attention-maps">Attention Maps</h3>
+<p>Attention maps in early layers show dense connectivity corresponding to computing the kernel matrix entries <span class="arithmatex">\(K_{ij} = \phi_i^T \phi_j\)</span>.</p>
+<h3 id="convergence-trajectories">Convergence Trajectories</h3>
+<p>Overlaying the theoretical PCG rate <span class="arithmatex">\(\rho = \frac{\sqrt{\kappa}-1}{\sqrt{\kappa}+1}\)</span> matches the empirical loss curves of the transformer.</p>
+<hr />
+<p><strong>Conclusion</strong>: The combination of high probe fidelity, matching failure modes, and specific ablation sensitivity provides strong evidence for the PCG mechanism hypothesis.</p>
 
 
 

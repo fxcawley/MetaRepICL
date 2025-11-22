@@ -927,7 +927,7 @@
 <h2 id="1-route-a-softmax-as-exponential-kernel-krr">1. Route A: Softmax as Exponential Kernel KRR</h2>
 <p>To validate Theorem 1, we compared the predictions of a minimal Softmax Attention layer against a ground-truth Kernel Ridge Regression oracle using the exponential kernel <span class="arithmatex">\(K(x, x') = \exp(\langle x, x' \rangle / \tau)\)</span>.</p>
 <p><strong>Results.</strong>
-As shown in Figure 1 (<code>figures/route_a_mvp.png</code>), the Softmax model's predictions align closely with the KRR oracle, significantly outperforming a standard normalized kernel smoother (Nadaraya-Watson) baseline in terms of RMSE.
+As shown in Figure 1 (<code>figures/route_a_mvp.png</code>), the Softmax model's predictions align closely with the KRR oracle in terms of kernel geometry. Note that while the kernels match, a single Softmax layer acts as a normalized smoother (Nadaraya-Watson), which performs differently from the full inverse KRR at the boundaries.
 -   <strong>Operator Norm</strong>: We measured the operator norm difference <span class="arithmatex">\(\| \tilde{K}_{softmax} - K_{exp} \|_{op}\)</span> on the support set. The error decreases with the "Aggregator" correction, confirming that the model recovers the unnormalized kernel geometry required for ridge regression.
 -   <strong>Temperature Sensitivity</strong>: Ablation studies (<code>figures/ablations/route_a_temp.png</code>) demonstrate that this alignment holds across a range of temperatures <span class="arithmatex">\(\tau\)</span>, whereas the normalized softmax baseline diverges.</p>
 <h2 id="2-route-b-preconditioned-conjugate-gradient">2. Route B: Preconditioned Conjugate Gradient</h2>
