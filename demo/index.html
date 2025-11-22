@@ -968,7 +968,10 @@ Is mathematically equivalent to running an optimization algorithm on the kernel 
 <a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="c1"># f_oracle = k(x).T @ alpha</span>
 </code></pre></div>
 <h3 id="resulting-alignment">Resulting Alignment</h3>
-<p>Running the experiment produces this alignment plot. The <strong>Orange</strong> line (Softmax Model) recovers the geometry of the <strong>Blue</strong> line (Oracle KRR). Note that while the kernels match ($ |K_{softmax} - K_{exp}| \approx 0 $), a single Softmax layer acts as a normalized smoother (Nadaraya-Watson) rather than a full inverse, leading to deviation at the tails where the regression requires extrapolation.</p>
+<p>Running the experiment produces this alignment plot.
+- <strong>Blue (Oracle KRR)</strong>: The theoretical ideal.
+- <strong>Green (Deep Transformer)</strong>: A constructed multi-layer Transformer implementing Gradient Descent. It tracks the Oracle closely, validating that the architecture <em>can</em> implement the full KRR algorithm.
+- <strong>Orange (1-Layer Softmax)</strong>: A single attention layer. While it uses the same kernel geometry, it acts as a normalized smoother (Nadaraya-Watson) and deviates from the Oracle, especially at the tails.</p>
 <p><img alt="Route A MVP" src="../figures/route_a_mvp.png" width="600" /></p>
 <h2 id="3-route-b-the-linear-attention-pcg">3. Route B: The Linear Attention PCG</h2>
 <p>For linear attention, the model must be iterative. Each layer performs one step of Preconditioned Conjugate Gradient.</p>

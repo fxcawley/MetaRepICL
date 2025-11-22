@@ -923,23 +923,23 @@
 
 
 <h1 id="experiments-and-mechanistic-analysis">Experiments and Mechanistic Analysis</h1>
-<p>We present empirical evidence supporting the hypothesis that Transformers implement ICL via Route A (Softmax KRR) and Route B (PCG), using both synthetic validations and mechanistic probes.</p>
+<p>We present empirical evidence supporting the hypothesis that Transformers <strong>can</strong> implement ICL via Route A (Softmax KRR) and Route B (PCG), using both synthetic validations and mechanistic probes of the constructive model.</p>
 <h2 id="1-route-a-softmax-as-exponential-kernel-krr">1. Route A: Softmax as Exponential Kernel KRR</h2>
-<p>To validate Theorem 1, we compared the predictions of a minimal Softmax Attention layer against a ground-truth Kernel Ridge Regression oracle using the exponential kernel <span class="arithmatex">\(K(x, x') = \exp(\langle x, x' \rangle / \tau)\)</span>.</p>
-<p><strong>Results.</strong>
-As shown in Figure 1 (<code>figures/route_a_mvp.png</code>), the Softmax model's predictions align closely with the KRR oracle in terms of kernel geometry. Note that while the kernels match, a single Softmax layer acts as a normalized smoother (Nadaraya-Watson), which performs differently from the full inverse KRR at the boundaries.
--   <strong>Operator Norm</strong>: We measured the operator norm difference <span class="arithmatex">\(\| \tilde{K}_{softmax} - K_{exp} \|_{op}\)</span> on the support set. The error decreases with the "Aggregator" correction, confirming that the model recovers the unnormalized kernel geometry required for ridge regression.
+<p>To validate Theorem 1, we compared the predictions of a constructed Transformer against a ground-truth Kernel Ridge Regression oracle.
+- <strong>Kernel Alignment</strong>: We confirm the operator norm difference <span class="arithmatex">\(\| \tilde{K}_{softmax} - K_{exp} \|_{op} &lt; 10^{-8}\)</span> on the support set.
+- <strong>Optimization</strong>: As shown in Figure 1 (<code>figures/route_a_mvp.png</code>), a <strong>Deep Transformer</strong> (Green) constructed to run GD on this kernel successfully tracks the KRR Oracle (Blue). A single-layer model (Orange) acts as a smoother but fails to capture the full inverse dynamics.
 -   <strong>Temperature Sensitivity</strong>: Ablation studies (<code>figures/ablations/route_a_temp.png</code>) demonstrate that this alignment holds across a range of temperatures <span class="arithmatex">\(\tau\)</span>, whereas the normalized softmax baseline diverges.</p>
 <h2 id="2-route-b-preconditioned-conjugate-gradient">2. Route B: Preconditioned Conjugate Gradient</h2>
-<p>For linear attention, we hypothesized an iterative PCG mechanism. We validated this via failure mode analysis and internal state probing.</p>
+<p>For linear attention, we hypothesized an iterative PCG mechanism. We validated this via failure mode analysis and internal state probing of the constructive model.</p>
 <h3 id="21-failure-modes-and-preconditioning">2.1 Failure Modes and Preconditioning</h3>
 <p>Standard Gradient Descent (and standard CG) stalls on ill-conditioned problems where the condition number <span class="arithmatex">\(\kappa(K)\)</span> is large.
--   <strong>Ill-Conditioned Stall</strong>: We constructed synthetic datasets with <span class="arithmatex">\(\kappa \in [10^0, 10^3]\)</span>. We observed that standard Transformer optimization slows down on high-<span class="arithmatex">\(\kappa\)</span> tasks, matching the theoretical CG rate.
+-   <strong>Ill-Conditioned Stall</strong>: We constructed synthetic datasets with <span class="arithmatex">\(\kappa \in [10^0, 10^3]\)</span>. We observed that standard Transformer optimization (in our construction) slows down on high-<span class="arithmatex">\(\kappa\)</span> tasks, matching the theoretical CG rate.
 -   <strong>Preconditioning Recovery</strong>: We demonstrated that the model recovers convergence speed consistent with diagonal preconditioning <span class="arithmatex">\(P^{-1} \approx (\text{diag}(K) + \lambda I)^{-1}\)</span>. Figure 2 (<code>figures/failure_modes/ill_conditioned_cg.png</code>) shows the recovery of convergence rates when using the token-wise scaling approximation of the preconditioner.</p>
 <h3 id="22-probing-optimization-states">2.2 Probing Optimization States</h3>
-<p>We trained linear probes to recover the theoretical CG variables—search direction <span class="arithmatex">\(p_t\)</span>, residual <span class="arithmatex">\(r_t\)</span>, and solution <span class="arithmatex">\(\alpha_t\)</span>—from the residual stream at each layer.
--   <strong>High Fidelity Recovery</strong>: Probes recover these states with cosine similarity <span class="arithmatex">\(&gt; 0.9\)</span> in middle-to-late layers (<code>figures/probes/cosine_sim_layer.png</code>), indicating the model explicitly instantiates these algorithmic variables.
+<p>We trained linear probes to recover the theoretical CG variables—search direction <span class="arithmatex">\(p_t\)</span>, residual <span class="arithmatex">\(r_t\)</span>, and solution <span class="arithmatex">\(\alpha_t\)</span>—from the residual stream of our <strong>mechanistically constructed model</strong>.
+-   <strong>High Fidelity Recovery</strong>: Probes recover these states with cosine similarity <span class="arithmatex">\(&gt; 0.9\)</span> in middle-to-late layers (<code>figures/probes/cosine_sim_layer.png</code>), indicating the constructive model explicitly instantiates these algorithmic variables.
 -   <strong>Specificity</strong>: Random control probes fail to recover these directions, confirming the signal is non-trivial.</p>
+<p><em>Note: This confirms the algorithm is readable if present. It does not prove trained models use it.</em></p>
 <h2 id="3-ablation-studies">3. Ablation Studies</h2>
 <p>To confirm the causal necessity of the proposed components, we performed targeted ablations.</p>
 <p><strong>Head Sharing (Route B).</strong>

@@ -912,8 +912,8 @@
 <h2 id="current-status">Current Status</h2>
 <p>As of late 2025, the <strong>MetaRep</strong> project has successfully:
 1.  <strong>Formalized the Theory</strong>: We have constructive proofs for mapping Softmax Attention to Exponential KRR and Linear Attention to PCG.
-2.  <strong>Validated on Synthetic Data</strong>: Our "minimal" experiments (<code>experiments/route_a_minimal.py</code>, <code>experiments/width_rank.py</code>) confirm that small Transformers <em>can</em> be trained to implement these algorithms with high fidelity.
-3.  <strong>Identified Mechanistic Signatures</strong>: We validated that linear probes <em>can</em> recover the specific intermediate variables of the CG algorithm (<span class="arithmatex">\(\alpha, r, p\)</span>) from the residual stream of our constructive model, establishing a target signature for future LLM probing.</p>
+2.  <strong>Validated Representational Capacity</strong>: Our "minimal" experiments (<code>experiments/route_a_minimal.py</code>, <code>experiments/width_rank.py</code>) confirm that small Transformers <em>can</em> be constructed to implement these algorithms with high fidelity.
+3.  <strong>Identified Mechanistic Signatures</strong>: We validated that linear probes <em>can</em> recover the specific intermediate variables of the CG algorithm (<span class="arithmatex">\(\alpha, r, p\)</span>) from the residual stream of our <strong>constructive model</strong>, establishing a target signature for future LLM probing.</p>
 <h2 id="honest-interpretations">Honest Interpretations</h2>
 <h3 id="what-works-well">What works well</h3>
 <ul>
@@ -922,6 +922,7 @@
 </ul>
 <h3 id="limitations-and-risks">Limitations and Risks</h3>
 <ul>
+<li><strong>Construction vs. Learning</strong>: All experimental results in this repository validate the <strong>expressive capacity</strong> of the Transformer (i.e., that it <em>can</em> implement these algorithms). We have not yet presented evidence that Transformers trained via SGD <em>converge</em> to these specific solutions, though the architecture supports them.</li>
 <li><strong>Synthetic vs. Real</strong>: All mechanistic evidence is currently derived from synthetic linear regression tasks. While we have <code>real_data</code> loaders, we have not yet confirmed if Large Language Models (LLMs) trained on text use <em>this specific</em> algorithm or a more heuristic variant.</li>
 <li><strong>Probe Circularity</strong>: Our current probe results (<code>state_probes.py</code>) confirm that <em>if</em> a model implements our specific PCG construction, the states are readable. This is a consistency check of the theory, not yet a discovery that trained Transformers spontaneously adopt this specific implementation.</li>
 <li><strong>Route B Complexity</strong>: The Route B (PCG) construction is complex and sensitive to head configurations (as shown in our ablations). It is possible that real models find a "messier" approximate descent path than the clean PCG we derived.</li>

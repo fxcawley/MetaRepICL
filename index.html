@@ -957,9 +957,10 @@
 
 
 <h1 id="metarep-in-context-learning-as-meta-representation-alignment">MetaRep: In-Context Learning as Meta-Representation Alignment</h1>
-<p><strong>Does a Transformer simulate Gradient Descent during In-Context Learning?</strong>
-Our work suggests they do something more efficient: <strong>Preconditioned Conjugate Gradient (PCG)</strong> or <strong>Exponential Kernel Ridge Regression (KRR)</strong> depending on the attention mechanism.</p>
-<p>This project, <strong>MetaRep</strong>, formalizes and empirically validates the hypothesis that the In-Context Learning (ICL) forward pass implements Kernel Ridge Regression on learned meta-representations.</p>
+<p><strong>Can a Transformer simulate Gradient Descent during In-Context Learning?</strong>
+Our work suggests the architecture is capable of implementing efficient optimization algorithms: <strong>Preconditioned Conjugate Gradient (PCG)</strong> or <strong>Exponential Kernel Ridge Regression (KRR)</strong>.</p>
+<p>This project, <strong>MetaRep</strong>, formalizes the constructive proofs and empirically validates the <strong>expressivity</strong> of the Transformer architecture to implement these algorithms.</p>
+<p><em>Note: This repository focuses on mechanistic construction and capacity. Training Transformers to discover these algorithms from scratch is the subject of future work.</em></p>
 <p><a class="md-button md-button--primary" href="demo/">View the Worked Demo</a></p>
 <hr />
 <h2 id="the-key-idea">The Key Idea</h2>
@@ -972,10 +973,12 @@ $$ K(x, x') = \exp\left(\frac{\langle \phi(x), \phi(x') \rangle}{\tau}\right) $$
 <hr />
 <h2 id="key-results">Key Results</h2>
 <h3 id="1-softmax-krr-alignment">1. Softmax KRR Alignment</h3>
-<p>The Transformer's attention mechanism induces a kernel that aligns with the theoretical exponential kernel (operator norm difference <span class="arithmatex">\(&lt; 10^{-8}\)</span>). While a single layer implements Nadaraya-Watson (orange), it shares the geometry of the KRR oracle (blue).</p>
+<p>The Transformer's attention mechanism induces a kernel that aligns with the theoretical exponential kernel (operator norm difference <span class="arithmatex">\(&lt; 10^{-8}\)</span>).
+- <strong>Green vs Blue</strong>: A deep Transformer constructed to run Gradient Descent (Green) successfully recovers the Oracle KRR solution (Blue).
+- <strong>Orange</strong>: A single layer acts as a Nadaraya-Watson smoother, sharing the kernel geometry but not the optimization path.</p>
 <p><img alt="Route A MVP" src="figures/route_a_mvp.png" width="600" /></p>
 <h3 id="2-failure-modes-preconditioning">2. Failure Modes &amp; Preconditioning</h3>
-<p>Standard Gradient Descent stalls on ill-conditioned data (large <span class="arithmatex">\(\kappa\)</span>). Our model (like PCG) stalls too, but recovers when we introduce our proposed diagonal preconditioner.</p>
+<p>Standard Gradient Descent stalls on ill-conditioned data (large <span class="arithmatex">\(\kappa\)</span>). Our constructed PCG model stalls too, but recovers when we introduce our proposed diagonal preconditioner.</p>
 <p><img alt="CG Failure Modes" src="figures/failure_modes/ill_conditioned_cg.png" width="600" /></p>
 <h3 id="3-low-rank-sketching">3. Low-Rank Sketching</h3>
 <p>When the model width <span class="arithmatex">\(m\)</span> is smaller than the data dimension, the Transformer acts as a <strong>low-rank sketch</strong> of the kernel. Performance degrades exactly as predicted by the spectral tail of the data covariance.</p>

@@ -1004,8 +1004,8 @@
 </ul>
 <h3 id="running-experiments">Running Experiments</h3>
 <p>Minimal examples (placeholders; actual paths provided in repo):
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>python<span class="w"> </span>experiments/route_a_minimal.py<span class="w"> </span>+seed<span class="o">=</span><span class="m">123</span><span class="w"> </span>trainer.max_steps<span class="o">=</span><span class="m">2000</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>python<span class="w"> </span>experiments/width_rank.py<span class="w"> </span>+seed<span class="o">=</span><span class="m">123</span><span class="w"> </span>model.width<span class="o">=</span><span class="m">64</span>,32,16
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>python<span class="w"> </span>experiments/route_a_minimal.py<span class="w"> </span>+seed<span class="o">=</span><span class="m">123</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>python<span class="w"> </span>experiments/width_rank.py<span class="w"> </span>+seed<span class="o">=</span><span class="m">123</span>
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>python<span class="w"> </span>experiments/probes/state_probes.py<span class="w"> </span>+seed<span class="o">=</span><span class="m">123</span>
 </code></pre></div></p>
 <h3 id="checkpoints-and-resumption">Checkpoints and Resumption</h3>
@@ -1014,7 +1014,7 @@
 <li>Resumption validated to within 1% metric drift.</li>
 </ul>
 <h3 id="evaluation">Evaluation</h3>
-<p><div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>python<span class="w"> </span>experiments/run_eval.py<span class="w"> </span>+seeds<span class="o">=</span><span class="s2">&quot;[123,456,789]&quot;</span><span class="w"> </span>eval.report_ci<span class="o">=</span><span class="nb">true</span>
+<p><div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>python<span class="w"> </span>experiments/run_eval.py<span class="w"> </span>+seeds<span class="o">=</span><span class="s2">&quot;[123,456,789]&quot;</span>
 </code></pre></div>
 Reports include mean ± 95% CI and paired tests where applicable.</p>
 <h3 id="artifact-release">Artifact Release</h3>
