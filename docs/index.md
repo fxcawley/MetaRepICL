@@ -25,7 +25,7 @@ Linear attention allows for iterative updates. We construct a mapping where each
 ## Key Results
 
 ### 1. Softmax KRR Alignment
-The Transformer's predictions (orange) align with the theoretical KRR oracle (blue) and outperform standard baselines.
+The Transformer's attention mechanism induces a kernel that aligns with the theoretical exponential kernel (operator norm difference $< 10^{-8}$). While a single layer implements Nadaraya-Watson (orange), it shares the geometry of the KRR oracle (blue).
 
 ![Route A MVP](figures/route_a_mvp.png){ width=600 }
 

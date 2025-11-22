@@ -146,8 +146,8 @@ def main():
     plt.legend()
     plt.grid(True, alpha=0.3)
     
-    os.makedirs("figures/failure_modes", exist_ok=True)
-    out_path = "figures/failure_modes/ill_conditioned_cg.png"
+    os.makedirs("docs/figures/failure_modes", exist_ok=True)
+    out_path = "docs/figures/failure_modes/ill_conditioned_cg.png"
     plt.savefig(out_path)
     print(f"Saved plot to {out_path}")
 
