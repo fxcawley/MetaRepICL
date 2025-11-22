@@ -7,7 +7,6 @@ import numpy as np
 import torch
 from omegaconf import DictConfig
 import hydra
-import os
 
 # Patch argparse for Hydra/Py3.14
 _orig_add_argument = argparse.ArgumentParser.add_argument
@@ -30,7 +29,7 @@ def run_route_a_minimal(
 	noise: float = 0.1,
 ) -> Dict[str, float]:
 	torch.manual_seed(seed)
-	np.random.seed(seed)
+	rng = np.random.default_rng(seed)
 	# Features φ for supports and queries
 	phi_s = torch.randn(n_support, p, dtype=torch.float64)
 	phi_q = torch.randn(n_query, p, dtype=torch.float64)
@@ -74,24 +73,23 @@ def run_route_a_minimal(
 
 @hydra.main(config_path="../configs", config_name="route_a", version_base=None)
 def main(cfg: DictConfig) -> None:
-	seed = int(cfg.get("seed", 123))
-	n_support = int(cfg.get("n_support", 48))
-	n_query = int(cfg.get("n_query", 32))
-	p = int(cfg.get("p", 16))
-	d_proj = int(cfg.get("d_proj", 12))
-	tau = float(cfg.get("tau", 0.5))
-	lam = float(cfg.get("lambda", 1e-2))
-	noise = float(cfg.get("noise", 0.1))
+	# For plotting, we check sys.argv manually or use hydra's cfg if we added a plot flag to config
+	# But here we use argparse within hydra main which is unconventional but works if we use parse_known_args
+	parser = argparse.ArgumentParser()
+	parser.add_argument("--plot", action="store_true")
+	parser.add_argument("--out", type=str, default="figures/route_a_mvp.png")
+	# We only parse the specific args we added, ignoring hydra's args
+	args, _ = parser.parse_known_args()
 	
 	res = run_route_a_minimal(
-		seed=seed,
-		n_support=n_support,
-		n_query=n_query,
-		p=p,
-		d_proj=d_proj,
-		tau=tau,
-		lam=lam,
-		noise=noise,
+		seed=int(cfg.get("seed", 123)),
+		n_support=int(cfg.get("n_support", 48)),
+		n_query=int(cfg.get("n_query", 32)),
+		p=int(cfg.get("p", 16)),
+		d_proj=int(cfg.get("d_proj", 12)),
+		tau=float(cfg.get("tau", 0.5)),
+		lam=float(cfg.get("lambda", 1e-2)),
+		noise=float(cfg.get("noise", 0.1)),
 	)
 	print(json.dumps(res))
 	
@@ -106,6 +104,7 @@ def main(cfg: DictConfig) -> None:
 			plt.bar(labels, vals)
 			plt.title("Route A MVP RMSE")
 			plt.tight_layout()
+			import os
 			os.makedirs(os.path.dirname(out_path), exist_ok=True)
 			plt.savefig(out_path, dpi=150)
 		except Exception:
