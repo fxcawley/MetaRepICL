@@ -1,41 +1,53 @@
-# Byte-compiled / optimized / DLL files
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
-
-# C extensions
 *.so
-
-# Distribution / packaging
 .Python
 build/
+develop-eggs/
 dist/
-*.egg-info/
+downloads/
+eggs/
 .eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
 
-# Virtual environments
-.venv/
+# Virtual Env
 venv/
+env/
 ENV/
 
-# PyTorch / data / outputs
+# Hydra
 outputs/
-checkpoints/
-wandb/
-logs/
-.data/
-.data-cache/
+multirun/
 
-# OS
-.DS_Store
-Thumbs.db
+# Pytest
+.pytest_cache/
+.coverage
+htmlcov/
 
-# Editor
+# VS Code
 .vscode/
+
+# IntelliJ
 .idea/
 
-# Notebooks
-.ipynb_checkpoints/
+# Mac
+.DS_Store
 
-# Local configs
-.env
+# WandB
+wandb/
+
+# Submission
+submission_package.zip
