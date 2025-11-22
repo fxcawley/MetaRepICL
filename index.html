@@ -972,7 +972,7 @@ $$ K(x, x') = \exp\left(\frac{\langle \phi(x), \phi(x') \rangle}{\tau}\right) $$
 <hr />
 <h2 id="key-results">Key Results</h2>
 <h3 id="1-softmax-krr-alignment">1. Softmax KRR Alignment</h3>
-<p>The Transformer's predictions (orange) align with the theoretical KRR oracle (blue) and outperform standard baselines.</p>
+<p>The Transformer's attention mechanism induces a kernel that aligns with the theoretical exponential kernel (operator norm difference <span class="arithmatex">\(&lt; 10^{-8}\)</span>). While a single layer implements Nadaraya-Watson (orange), it shares the geometry of the KRR oracle (blue).</p>
 <p><img alt="Route A MVP" src="figures/route_a_mvp.png" width="600" /></p>
 <h3 id="2-failure-modes-preconditioning">2. Failure Modes &amp; Preconditioning</h3>
 <p>Standard Gradient Descent stalls on ill-conditioned data (large <span class="arithmatex">\(\kappa\)</span>). Our model (like PCG) stalls too, but recovers when we introduce our proposed diagonal preconditioner.</p>

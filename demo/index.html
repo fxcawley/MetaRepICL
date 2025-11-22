@@ -977,7 +977,7 @@ Is mathematically equivalent to running an optimization algorithm on the kernel 
 <p>We tested this in <code>experiments/failure_modes/ill_conditioned.py</code>.
 - <strong>Standard CG (Solid Lines)</strong>: Stalls when condition number <span class="arithmatex">\(\kappa\)</span> is high (100, 1000).
 - <strong>Preconditioned CG (Dashed Lines)</strong>: Convergence is restored, independent of <span class="arithmatex">\(\kappa\)</span>.</p>
-<p><img alt="Ill Conditioned CG" src="figures/failure_modes/ill_conditioned_cg.png" width="600" /></p>
+<p><img alt="Ill Conditioned CG" src="../figures/failure_modes/ill_conditioned_cg.png" width="600" /></p>
 <h2 id="4-width-vs-rank">4. Width vs. Rank</h2>
 <p>Finally, what happens if the model is too small?
 Theory predicts it acts like a low-rank sketch. We verified this in <code>experiments/width_rank.py</code>.</p>
@@ -987,7 +987,7 @@ Theory predicts it acts like a low-rank sketch. We verified this in <code>experi
 <li><strong>Curve</strong>: The spectral tail sum <span class="arithmatex">\(\sum_{i&gt;m} \lambda_i\)</span>.</li>
 </ul>
 <p>The empirical error (dots) hugs the theoretical bound (line).</p>
-<p><img alt="Width Rank Curve" src="figures/sweeps/width_rank_curve.png" width="600" /></p>
+<p><img alt="Width Rank Curve" src="../figures/sweeps/width_rank_curve.png" width="600" /></p>
 <hr />
 <h2 id="try-it-yourself">Try it yourself</h2>
 <p>You can reproduce all these figures with a single command:
