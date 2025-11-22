@@ -18,7 +18,7 @@ We trained linear probes $W_{probe}$ on the simulated residual stream activation
 - **Cosine Similarity**: Probes consistently recover the true $p_t$ and $r_t$ with cosine similarity $> 0.9$ given the constructive embedding.
 - **Trajectory**: The recovery fidelity is maintained across steps.
 
-![Probe Cosine Similarity vs Layer](../figures/probes/cosine_sim_layer.png){ width=600 }
+![Probe Cosine Similarity vs Layer](../../figures/probes/cosine_sim_layer.png){ width=600 }
 
 ## 2. Failure Modes and Ill-Conditioning
 
@@ -28,14 +28,14 @@ When the kernel condition number $\kappa(K)$ is high ($> 100$), standard CG stal
 ### Preconditioning
 Introducing a diagonal preconditioner (approximated by token-wise scaling) restores convergence rates, matching theoretical predictions for $P^{-1} \approx (diag(K) + \lambda I)^{-1}$.
 
-![CG Stall and Recovery](../figures/failure_modes/ill_conditioned_cg.png){ width=600 }
+![CG Stall and Recovery](../../figures/failure_modes/ill_conditioned_cg.png){ width=600 }
 
 ## 3. Ablation Studies
 
 ### Head Drop
 Removing the "Aggregation Head" (Head 2 in our construction, responsible for mean subtraction) drastically increases error, confirming that the specific two-head construction (Scaled Softmax - Mean) is necessary to approximate the negative residual update correctly.
 
-![Route B Ablation](../figures/ablations/route_b_heads.png){ width=600 }
+![Route B Ablation](../../figures/ablations/route_b_heads.png){ width=600 }
 
 ## 4. Visualizations
 

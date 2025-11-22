@@ -27,8 +27,8 @@ pip install -r requirements.txt
 ### Running Experiments
 Minimal examples (placeholders; actual paths provided in repo):
 ```bash
-python experiments/route_a_minimal.py +seed=123 trainer.max_steps=2000
-python experiments/width_rank.py +seed=123 model.width=64,32,16
+python experiments/route_a_minimal.py +seed=123
+python experiments/width_rank.py +seed=123
 python experiments/probes/state_probes.py +seed=123
 ```
 
@@ -38,7 +38,7 @@ python experiments/probes/state_probes.py +seed=123
 
 ### Evaluation
 ```bash
-python experiments/run_eval.py +seeds="[123,456,789]" eval.report_ci=true
+python experiments/run_eval.py +seeds="[123,456,789]"
 ```
 Reports include mean ± 95% CI and paired tests where applicable.
 

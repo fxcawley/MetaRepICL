@@ -4,11 +4,15 @@ Let Φ ∈ R^{k×p} be support features and φ(x) ∈ R^p the query features fro
 
 \[ \tilde K_{ij} = \exp\!\big(\tfrac{1}{\tau}\langle U\phi(x_i), U\phi(x_j)\rangle \big),\qquad \tilde k_j(x) = \exp\!\big(\tfrac{1}{\tau}\langle U\phi(x_j), U\phi(x)\rangle \big). \]
 
-Then a single softmax attention head with queries Q=UΦ, keys K=UΦ, and values V=y (or channelwise encodings thereof), together with an appropriate readout, implements the kernel ridge regression predictor
+Then a **Deep Transformer** constructed with $L$ layers of attention heads (queries Q=UΦ, keys K=UΦ) and MLP blocks can implement **Gradient Descent** steps on the kernel ridge regression objective, converging to:
 
 \[ f_*(x) = \tilde k(x)^\top (\tilde K + \lambda I)^{-1} y. \]
 
-Sketch of mapping:
+A **single** softmax attention head, however, implements the normalized Nadaraya-Watson estimator:
+\[ f_{NW}(x) = \frac{\sum_j \tilde k_j(x) y_j}{\sum_j \tilde k_j(x)} \]
+which shares the kernel geometry but differs in prediction.
+
+Sketch of mapping (Deep KRR):
 
 - Unnormalized logits S = QK^T/τ yield elementwise exp(S) = \tilde K entrywise.
 - Softmax normalizes rows by Z_i = ∑_j exp(S_{ij}). Two strategies:

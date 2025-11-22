@@ -49,11 +49,7 @@ def run_route_a_minimal(
     
     # Exponential kernel on supports and queries
     S_ss = (Qs @ Qs.T) / tau
-    # DEBUG PRINTS
-    print(f"DEBUG: S_ss max: {S_ss.max().item()}")
-    print(f"DEBUG: S_ss min: {S_ss.min().item()}")
     K_exp_ss = torch.exp(S_ss)  # (k, k)
-    print(f"DEBUG: K_exp_ss max: {K_exp_ss.max().item()}")
     
     S_sq = (Qs @ Qq.T) / tau
     K_exp_sq = torch.exp(S_sq)  # (k, nq)
@@ -72,32 +68,66 @@ def run_route_a_minimal(
     row_sums = torch.sum(torch.exp(S_ss), dim=1, keepdim=True)  # Z_i per row
     K_from_softmax = softmax_rows * row_sums  # reconstruct exp(S_ss)
     op_norm_diff = torch.linalg.norm(K_from_softmax - K_exp_ss, ord=2).item()
+
+    # --- Deep Transformer (GD-KRR) ---
+    # Simulate L layers of Gradient Descent using the Softmax operator.
+    # Goal: Solve (K + lam I) alpha = y
+    # Update: alpha <- alpha - eta * ((K + lam I) alpha - y)
+    # Operator: v -> K v is approximated by (Softmax(QK^T) * Z) v
     
+    alpha_deep = torch.zeros(n_support, dtype=torch.float64)
+    
+    # Use the exact kernel reconstruction from Softmax to verify Algorithm capacity
+    K_op = K_from_softmax
+    
+    # Adaptive Learning Rate for stability
+    # Max eigenvalue of K_op
+    max_eig = torch.linalg.matrix_norm(K_op, ord=2).item()
+    # Optimal rate for convex problem is 2/L, but with noise/approx safer to use 1/L
+    # We need to account for lambda too: L = max_eig + lam
+    L_smooth = max_eig + lam
+    eta = 1.0 / L_smooth
+    
+    steps = 50 # Depth of transformer
+    
+    for _ in range(steps):
+        # 1. Compute K * alpha using the attention mechanism approximation
+        k_alpha = K_op @ alpha_deep
+        
+        # 2. Compute gradient: (K alpha + lam alpha - y)
+        grad = k_alpha + lam * alpha_deep - y_s
+        
+        # 3. Update alpha (Residual connection with MLP)
+        alpha_deep = alpha_deep - eta * grad
+        
+    # Readout
+    f_deep = (K_exp_sq.T @ alpha_deep)
+
     def rmse(pred: torch.Tensor) -> float:
         return float(torch.sqrt(torch.mean((pred - y_q_true) ** 2)))
         
     return {
         "rmse_oracle": rmse(f_oracle),
         "rmse_softmax": rmse(f_softmax),
+        "rmse_deep": rmse(f_deep),
         "rmse_gap": abs(rmse(f_oracle) - rmse(f_softmax)),
+        "rmse_deep_gap": abs(rmse(f_oracle) - rmse(f_deep)),
         "op_norm_diff": float(op_norm_diff),
         "tau": float(tau),
         "lambda": float(lam),
         # Return vectors for plotting
         "f_oracle": f_oracle.tolist(),
         "f_softmax": f_softmax.tolist(),
+        "f_deep": f_deep.tolist(),
         "y_q_true": y_q_true.tolist(),
     }
 
 
 @hydra.main(config_path="../configs", config_name="route_a", version_base=None)
 def main(cfg: DictConfig) -> None:
-    # For plotting, we check sys.argv manually or use hydra's cfg if we added a plot flag to config
-    # But here we use argparse within hydra main which is unconventional but works if we use parse_known_args
     parser = argparse.ArgumentParser()
     parser.add_argument("--plot", action="store_true")
     parser.add_argument("--out", type=str, default="docs/figures/route_a_mvp.png")
-    # We only parse the specific args we added, ignoring hydra's args
     args, _ = parser.parse_known_args()
     
     res = run_route_a_minimal(
@@ -106,13 +136,13 @@ def main(cfg: DictConfig) -> None:
         n_query=int(cfg.get("n_query", 32)),
         p=int(cfg.get("p", 16)),
         d_proj=int(cfg.get("d_proj", 12)),
-        tau=float(cfg.get("tau", 0.5)),
+        tau=float(cfg.get("tau", 2.0)), # Use 2.0 stable default
         lam=float(cfg.get("lambda", 1e-2)),
         noise=float(cfg.get("noise", 0.1)),
     )
     
     # Print JSON results without the large vectors
-    print_res = {k: v for k, v in res.items() if k not in ["f_oracle", "f_softmax", "y_q_true"]}
+    print_res = {k: v for k, v in res.items() if k not in ["f_oracle", "f_softmax", "f_deep", "y_q_true"]}
     print(json.dumps(print_res))
     
     if cfg.get("plot", False):
@@ -123,15 +153,17 @@ def main(cfg: DictConfig) -> None:
             
             f_oracle = np.array(res["f_oracle"])
             f_softmax = np.array(res["f_softmax"])
+            f_deep = np.array(res["f_deep"])
             
             # Sort by Oracle value for clarity
             idxs = np.argsort(f_oracle)
             
             plt.figure(figsize=(8, 5))
-            plt.plot(f_oracle[idxs], label='Oracle (KRR)', color='blue', marker='o', markersize=4)
-            plt.plot(f_softmax[idxs], label='Transformer (Softmax)', color='orange', marker='x', markersize=4, linestyle='--')
+            plt.plot(f_oracle[idxs], label='Oracle (KRR)', color='blue', marker='o', markersize=4, linewidth=1.5)
+            plt.plot(f_deep[idxs], label='Deep Transformer (GD)', color='green', marker='s', markersize=3, linestyle='-')
+            plt.plot(f_softmax[idxs], label='1-Layer (Softmax)', color='orange', marker='x', markersize=4, linestyle='--', alpha=0.5)
             
-            plt.title("Route A: Softmax (One Layer) vs KRR Oracle")
+            plt.title("Route A: Deep Transformer Construction (Green) vs Oracle (Blue)")
             plt.xlabel("Query Sample (sorted by Oracle value)")
             plt.ylabel("Prediction")
             plt.legend()

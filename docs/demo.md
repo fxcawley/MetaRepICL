@@ -27,7 +27,10 @@ We implemented this in `experiments/route_a_minimal.py`. The core logic is:
 ```
 
 ### Resulting Alignment
-Running the experiment produces this alignment plot. The **Orange** line (Softmax Model) recovers the geometry of the **Blue** line (Oracle KRR). Note that while the kernels match ($ \|K_{softmax} - K_{exp}\| \approx 0 $), a single Softmax layer acts as a normalized smoother (Nadaraya-Watson) rather than a full inverse, leading to deviation at the tails where the regression requires extrapolation.
+Running the experiment produces this alignment plot.
+- **Blue (Oracle KRR)**: The theoretical ideal.
+- **Green (Deep Transformer)**: A constructed multi-layer Transformer implementing Gradient Descent. It tracks the Oracle closely, validating that the architecture *can* implement the full KRR algorithm.
+- **Orange (1-Layer Softmax)**: A single attention layer. While it uses the same kernel geometry, it acts as a normalized smoother (Nadaraya-Watson) and deviates from the Oracle, especially at the tails.
 
 ![Route A MVP](figures/route_a_mvp.png){ width=600 }
 

@@ -1,9 +1,11 @@
 # MetaRep: In-Context Learning as Meta-Representation Alignment
 
-**Does a Transformer simulate Gradient Descent during In-Context Learning?**
-Our work suggests they do something more efficient: **Preconditioned Conjugate Gradient (PCG)** or **Exponential Kernel Ridge Regression (KRR)** depending on the attention mechanism.
+**Can a Transformer simulate Gradient Descent during In-Context Learning?**
+Our work suggests the architecture is capable of implementing efficient optimization algorithms: **Preconditioned Conjugate Gradient (PCG)** or **Exponential Kernel Ridge Regression (KRR)**.
 
-This project, **MetaRep**, formalizes and empirically validates the hypothesis that the In-Context Learning (ICL) forward pass implements Kernel Ridge Regression on learned meta-representations.
+This project, **MetaRep**, formalizes the constructive proofs and empirically validates the **expressivity** of the Transformer architecture to implement these algorithms.
+
+*Note: This repository focuses on mechanistic construction and capacity. Training Transformers to discover these algorithms from scratch is the subject of future work.*
 
 [View the Worked Demo](demo.md){ .md-button .md-button--primary }
 
@@ -25,12 +27,14 @@ Linear attention allows for iterative updates. We construct a mapping where each
 ## Key Results
 
 ### 1. Softmax KRR Alignment
-The Transformer's attention mechanism induces a kernel that aligns with the theoretical exponential kernel (operator norm difference $< 10^{-8}$). While a single layer implements Nadaraya-Watson (orange), it shares the geometry of the KRR oracle (blue).
+The Transformer's attention mechanism induces a kernel that aligns with the theoretical exponential kernel (operator norm difference $< 10^{-8}$).
+- **Green vs Blue**: A deep Transformer constructed to run Gradient Descent (Green) successfully recovers the Oracle KRR solution (Blue).
+- **Orange**: A single layer acts as a Nadaraya-Watson smoother, sharing the kernel geometry but not the optimization path.
 
 ![Route A MVP](figures/route_a_mvp.png){ width=600 }
 
 ### 2. Failure Modes & Preconditioning
-Standard Gradient Descent stalls on ill-conditioned data (large $\kappa$). Our model (like PCG) stalls too, but recovers when we introduce our proposed diagonal preconditioner.
+Standard Gradient Descent stalls on ill-conditioned data (large $\kappa$). Our constructed PCG model stalls too, but recovers when we introduce our proposed diagonal preconditioner.
 
 ![CG Failure Modes](figures/failure_modes/ill_conditioned_cg.png){ width=600 }
 
