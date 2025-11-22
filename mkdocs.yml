@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 site_name: MetaRep ICL
 site_description: "Mechanistic interpretation of In-Context Learning as Meta-Representation Alignment (KRR/PCG)"
 site_author: "MetaRep Authors"
@@ -54,3 +55,61 @@ nav:
     - "Mechanistic Report": experiments/mechanistic_report.md
   - "Reproducibility": reproducibility.md
 
+=======
+site_name: MetaRep ICL
+site_description: "Mechanistic interpretation of In-Context Learning as Meta-Representation Alignment (KRR/PCG)"
+site_author: "MetaRep Authors"
+repo_url: https://github.com/fxcawley/MetaRepICL
+repo_name: MetaRepICL
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: deep purple
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: deep purple
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - toc.integrate
+    - code.copy
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.arithmatex:
+      generic: true
+  - attr_list
+  - md_in_html
+
+extra_javascript:
+  - https://polyfill.io/v3/polyfill.min.js?features=es6
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+
+nav:
+  - Home: index.md
+  - "Project Status": status.md
+  - Theory:
+    - "Overview": theory/index.md
+    - "Route A (Softmax)": theory/route_a.md
+    - "Route B (PCG)": theory/route_b.md
+    - "Width-Rank": theory/width_rank.md
+  - Evidence:
+    - "Experiments Summary": experiments/index.md
+    - "Mechanistic Report": experiments/mechanistic_report.md
+  - "Reproducibility": reproducibility.md
+
+>>>>>>> 2dee55f (feat: Documentation Website (GitHub Pages) #71)
