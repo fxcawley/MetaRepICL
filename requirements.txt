@@ -6,3 +6,5 @@ omegaconf>=2.3
 wandb>=0.17
 pytest>=8.0
 pre-commit>=3.7
+mkdocs>=1.5
+mkdocs-material>=9.5

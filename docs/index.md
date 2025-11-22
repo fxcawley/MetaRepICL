@@ -5,6 +5,8 @@ Our work suggests they do something more efficient: **Preconditioned Conjugate G
 
 This project, **MetaRep**, formalizes and empirically validates the hypothesis that In-Context Learning (ICL) is an implementation of Kernel Ridge Regression on learned meta-representations.
 
+[View the Worked Demo](demo.md){ .md-button .md-button--primary }
+
 ---
 
 ## The Key Idea
@@ -41,12 +43,12 @@ When the model width $m$ is smaller than the data dimension, the Transformer act
 
 ## Walkthrough for Reviewers
 
-1.  **Theory**: Start with the [Theory Overview](theory/index.md) to see the constructive proofs.
-2.  **Evidence**: Check the [Experiments Summary](experiments/index.md) for the empirical validation.
-3.  **Code**: Run the [Reproducibility Script](reproducibility.md) to generate these figures yourself on your machine.
+1.  **Demo**: Start with the [Worked Demo](demo.md) to see the project in action.
+2.  **Theory**: Check the [Theory Overview](theory/index.md) for the proofs.
+3.  **Evidence**: See the [Experiments Summary](experiments/index.md) for empirical validation.
+4.  **Code**: Run the [Reproducibility Script](reproducibility.md) to generate these figures yourself.
 
 ## Project Status
 We have validated the core mechanisms on synthetic data. Current work focuses on scaling these probes to real Language Models (LLaMA-2, etc.) to see if this "Mesa-Optimizer" behavior emerges in the wild.
 
-[Read our Honest Interpretations and Future Work](status.md){ .md-button .md-button--primary }
-
+[Read our Honest Interpretations and Future Work](status.md){ .md-button }
