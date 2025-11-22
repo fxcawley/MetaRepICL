@@ -1,9 +1,9 @@
 # MetaRep: In-Context Learning as Meta-Representation Alignment
 
-**Does a Transformer learn to run Gradient Descent?**
+**Does a Transformer simulate Gradient Descent during In-Context Learning?**
 Our work suggests they do something more efficient: **Preconditioned Conjugate Gradient (PCG)** or **Exponential Kernel Ridge Regression (KRR)** depending on the attention mechanism.
 
-This project, **MetaRep**, formalizes and empirically validates the hypothesis that In-Context Learning (ICL) is an implementation of Kernel Ridge Regression on learned meta-representations.
+This project, **MetaRep**, formalizes and empirically validates the hypothesis that the In-Context Learning (ICL) forward pass implements Kernel Ridge Regression on learned meta-representations.
 
 [View the Worked Demo](demo.md){ .md-button .md-button--primary }
 

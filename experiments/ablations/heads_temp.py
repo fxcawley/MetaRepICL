@@ -166,7 +166,7 @@ def main(cfg: DictConfig):
     
     # Plotting
     if args.plot or True: # Always plot for now
-        os.makedirs("figures/ablations", exist_ok=True)
+        os.makedirs("docs/figures/ablations", exist_ok=True)
         
         # Plot B
         plt.figure(figsize=(10, 5))
@@ -177,8 +177,8 @@ def main(cfg: DictConfig):
         plt.title("Route B: Head Sharing vs Dedicated Aggregation Head")
         plt.legend()
         plt.grid(True, alpha=0.3)
-        plt.savefig("figures/ablations/route_b_heads.png")
-        print("Saved figures/ablations/route_b_heads.png")
+        plt.savefig("docs/figures/ablations/route_b_heads.png")
+        print("Saved docs/figures/ablations/route_b_heads.png")
         
         # Plot A
         plt.figure(figsize=(10, 5))
@@ -189,8 +189,8 @@ def main(cfg: DictConfig):
         plt.title("Route A: Normalization Effects (Exp vs Softmax)")
         plt.legend()
         plt.grid(True, alpha=0.3)
-        plt.savefig("figures/ablations/route_a_temp.png")
-        print("Saved figures/ablations/route_a_temp.png")
+        plt.savefig("docs/figures/ablations/route_a_temp.png")
+        print("Saved docs/figures/ablations/route_a_temp.png")
 
 if __name__ == "__main__":
     main()

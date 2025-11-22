@@ -1,51 +1,33 @@
 import json
+import sys
+from pathlib import Path
 import numpy as np
-from typing import Dict
+import matplotlib.pyplot as plt
+import os
+from typing import Dict, List, Tuple
+
+# Add repo root to path
+repo_root = Path(__file__).resolve().parents[2]
+if str(repo_root) not in sys.path:
+    sys.path.insert(0, str(repo_root))
+
 from src.lat.cg_stack import run_cg_with_history
-
-
-def generate_cg_dataset(num_tasks: int = 100, n: int = 64, p: int = 16, steps: int = 4, seed: int = 123):
-    rng = np.random.default_rng(seed)
-    all_activations_true = []
-    all_activations_control = []
-    all_targets = []
-    
-    W_true = rng.standard_normal((3 * n, 3 * n)) # Fixed probe projection for "true" model
-    
-    for i in range(num_tasks):
-        # Different problem per task
-        phi = rng.standard_normal((n, p)).astype(np.float64)
-        y = rng.standard_normal(n).astype(np.float64)
-        hist = run_cg_with_history(phi, y, lam=1e-1, t=steps)
-        
-        for (a, r_, p_) in hist:
-            z = np.concatenate([a, r_, p_])
-            all_targets.append(z)
-            # True: Linear transform of state
-            all_activations_true.append(W_true @ z)
-            # Control: Random noise (fixed dimension)
-            all_activations_control.append(rng.standard_normal(3 * n))
-            
-    return np.array(all_targets), np.array(all_activations_true), np.array(all_activations_control)
-
 
 def fit_linear_probe(X: np.ndarray, y: np.ndarray) -> float:
     # Closed-form least squares; return cosine similarity between predictions and target
-    # Check dimensions
     # X: (N_samples, D_in)
     # y: (N_samples, D_out)
     
-    # Guard against under-determined system (though here N > D)
-    # Use ridge for stability
     n_samples, n_features = X.shape
-    if n_samples < n_features:
-        print(f"Warning: Undersampled probe fit ({n_samples} < {n_features})")
-        
+    
     # Ridge solve: W = (X^T X + lam I)^-1 X^T y
     lam = 1e-3
     XtX = X.T @ X
     reg = lam * np.eye(XtX.shape[0])
-    W = np.linalg.solve(XtX + reg, X.T @ y)
+    try:
+        W = np.linalg.solve(XtX + reg, X.T @ y)
+    except np.linalg.LinAlgError:
+        return 0.0
     
     pred = X @ W
     pred_flat = pred.flatten()
@@ -60,22 +42,63 @@ def fit_linear_probe(X: np.ndarray, y: np.ndarray) -> float:
     cos = float(np.dot(pred_flat, y_flat) / (norm_p * norm_y))
     return cos
 
-
-def run_probes(seed: int = 123, n: int = 64, p: int = 16, steps: int = 4) -> Dict[str, float]:
-    # Generate enough data to avoid overfitting
-    # Dim = 3*n = 192. Need > 192 samples.
-    # 200 tasks * 4 steps = 800 samples.
-    targets, acts_true, acts_ctrl = generate_cg_dataset(num_tasks=200, n=n, p=p, steps=steps, seed=seed)
+def run_probes_per_layer(seed: int = 123, n: int = 64, p: int = 16, steps: int = 6):
+    rng = np.random.default_rng(seed)
+    W_true = rng.standard_normal((3 * n, 3 * n)) # Fixed probe projection for "true" model
     
-    cos_true = fit_linear_probe(acts_true, targets)
-    cos_ctrl = fit_linear_probe(acts_ctrl, targets)
-    return {"cos_true": cos_true, "cos_control": cos_ctrl}
-
+    targets_by_layer = {l: [] for l in range(1, steps + 1)}
+    acts_true_by_layer = {l: [] for l in range(1, steps + 1)}
+    acts_ctrl_by_layer = {l: [] for l in range(1, steps + 1)}
+    
+    # Generate data
+    num_tasks = 100
+    for _ in range(num_tasks):
+        phi = rng.standard_normal((n, p)).astype(np.float64)
+        y = rng.standard_normal(n).astype(np.float64)
+        hist = run_cg_with_history(phi, y, lam=1e-1, t=steps)
+        
+        for i, (a, r_, p_) in enumerate(hist):
+            layer_idx = i + 1
+            z = np.concatenate([a, r_, p_])
+            
+            targets_by_layer[layer_idx].append(z)
+            acts_true_by_layer[layer_idx].append(W_true @ z)
+            acts_ctrl_by_layer[layer_idx].append(rng.standard_normal(3 * n))
+            
+    # Fit probes
+    layers = list(range(1, steps + 1))
+    sims_true = []
+    sims_ctrl = []
+    
+    for l in layers:
+        X_true = np.array(acts_true_by_layer[l])
+        X_ctrl = np.array(acts_ctrl_by_layer[l])
+        Y = np.array(targets_by_layer[l])
+        
+        sims_true.append(fit_linear_probe(X_true, Y))
+        sims_ctrl.append(fit_linear_probe(X_ctrl, Y))
+        
+    return layers, sims_true, sims_ctrl
 
 def main():
-	res = run_probes()
-	print(json.dumps(res))
-
+    layers, sims_true, sims_ctrl = run_probes_per_layer()
+    
+    # Plot
+    plt.figure(figsize=(8, 5))
+    plt.plot(layers, sims_true, marker='o', label='Constructed Model (Simulation)')
+    plt.plot(layers, sims_ctrl, marker='x', linestyle='--', label='Random Control')
+    
+    plt.ylim(-0.1, 1.1)
+    plt.xlabel("Layer / Step")
+    plt.ylabel("Cosine Similarity")
+    plt.title("Theoretical Recoverability of CG States")
+    plt.legend()
+    plt.grid(True, alpha=0.3)
+    
+    out_path = "docs/figures/probes/cosine_sim_layer.png"
+    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+    plt.savefig(out_path, dpi=150)
+    print(f"Saved plot to {out_path}")
 
 if __name__ == "__main__":
-	main()
+    main()

@@ -131,7 +131,7 @@ def main(cfg: DictConfig) -> None:
             plt.plot(f_oracle[idxs], label='Oracle (KRR)', color='blue', marker='o', markersize=4)
             plt.plot(f_softmax[idxs], label='Transformer (Softmax)', color='orange', marker='x', markersize=4, linestyle='--')
             
-            plt.title("Route A: Transformer vs Theoretical Oracle")
+            plt.title("Route A: Softmax (One Layer) vs KRR Oracle")
             plt.xlabel("Query Sample (sorted by Oracle value)")
             plt.ylabel("Prediction")
             plt.legend()

@@ -3,6 +3,8 @@ import torch
 import numpy as np
 import hydra
 from omegaconf import DictConfig
+import matplotlib.pyplot as plt
+import os
 
 try:
     from src.softmax.route_b import SoftmaxDotProductApprox
@@ -49,10 +51,6 @@ def run_head_drop_ablation(
     K = torch.randn(1, n, p)
     V = torch.randn(1, n, 1)
     
-    # Center V only for reference? No, let's use raw V.
-    # If we use raw V, Route B (Full) should handle it via Head 2.
-    # Route B (Ablated) should fail.
-    
     model = SoftmaxDotProductApprox(d_model=p, epsilon=epsilon)
     
     # Full Model (Head 1 - Head 2)
@@ -90,6 +88,14 @@ def run_head_drop_ablation(
 
 @hydra.main(config_path="../../configs", config_name="config", version_base=None)
 def main(cfg: DictConfig):
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--plot", action="store_true")
+    parser.add_argument("--out", type=str, default="docs/figures/ablations/route_b_heads.png")
+    args, _ = parser.parse_known_args()
+    
+    plot = args.plot or cfg.get("plot", False)
+    out_path = args.out or cfg.get("out", "docs/figures/ablations/route_b_heads.png")
+
     res = run_head_drop_ablation(
         seed=int(cfg.get("seed", 123)),
         n=int(cfg.get("n_support", 64)),
@@ -97,7 +103,25 @@ def main(cfg: DictConfig):
         epsilon=float(cfg.get("epsilon", 1e-4))
     )
     print(json.dumps(res))
+    
+    if plot:
+        try:
+            plt.figure(figsize=(6, 5))
+            labels = ['Full Model (2 Heads)', 'Ablated (Head 1 Only)']
+            vals = [res['err_full'], res['err_ablated']]
+            colors = ['green', 'red']
+            
+            plt.bar(labels, vals, color=colors, alpha=0.7)
+            plt.ylabel('Relative Approximation Error')
+            plt.title('Route B Construction: Impact of Aggregation Head')
+            plt.grid(axis='y', alpha=0.3)
+            plt.tight_layout()
+            
+            os.makedirs(os.path.dirname(out_path), exist_ok=True)
+            plt.savefig(out_path, dpi=150)
+            print(f"Saved plot to {out_path}")
+        except Exception as e:
+            print(f"Error plotting: {e}")
 
 if __name__ == "__main__":
     main()
-

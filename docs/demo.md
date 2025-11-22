@@ -27,7 +27,7 @@ We implemented this in `experiments/route_a_minimal.py`. The core logic is:
 ```
 
 ### Resulting Alignment
-Running the experiment produces this alignment plot. The **Orange** line (Softmax Model) tracks the **Blue** line (Oracle KRR) almost perfectly, whereas a standard attention mechanism (Green/Red baselines) would fail to capture the sharp peaks of the function.
+Running the experiment produces this alignment plot. The **Orange** line (Softmax Model) recovers the geometry of the **Blue** line (Oracle KRR). Note that while the kernels match ($ \|K_{softmax} - K_{exp}\| \approx 0 $), a single Softmax layer acts as a normalized smoother (Nadaraya-Watson) rather than a full inverse, leading to deviation at the tails where the regression requires extrapolation.
 
 ![Route A MVP](figures/route_a_mvp.png){ width=600 }
 

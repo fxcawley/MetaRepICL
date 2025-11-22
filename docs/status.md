@@ -4,16 +4,17 @@
 As of late 2025, the **MetaRep** project has successfully:
 1.  **Formalized the Theory**: We have constructive proofs for mapping Softmax Attention to Exponential KRR and Linear Attention to PCG.
 2.  **Validated on Synthetic Data**: Our "minimal" experiments (`experiments/route_a_minimal.py`, `experiments/width_rank.py`) confirm that small Transformers *can* be trained to implement these algorithms with high fidelity.
-3.  **Identified Mechanistic Signatures**: We found that linear probes can recover the specific intermediate variables of the CG algorithm ($\alpha, r, p$) from the residual stream.
+3.  **Identified Mechanistic Signatures**: We validated that linear probes *can* recover the specific intermediate variables of the CG algorithm ($\alpha, r, p$) from the residual stream of our constructive model, establishing a target signature for future LLM probing.
 
 ## Honest Interpretations
 
 ### What works well
--   **The KRR Connection**: The link between Softmax attention and the Exponential Kernel is robust and appears to be the dominant mode of operation for small-context dense attention models.
+-   **The KRR Connection**: The link between Softmax attention and the Exponential Kernel is robust.
 -   **Preconditioning**: The theory that normalization layers (LayerNorm) act as diagonal preconditioners is supported by our failure-mode experiments.
 
 ### Limitations and Risks
 -   **Synthetic vs. Real**: All mechanistic evidence is currently derived from synthetic linear regression tasks. While we have `real_data` loaders, we have not yet confirmed if Large Language Models (LLMs) trained on text use *this specific* algorithm or a more heuristic variant.
+-   **Probe Circularity**: Our current probe results (`state_probes.py`) confirm that *if* a model implements our specific PCG construction, the states are readable. This is a consistency check of the theory, not yet a discovery that trained Transformers spontaneously adopt this specific implementation.
 -   **Route B Complexity**: The Route B (PCG) construction is complex and sensitive to head configurations (as shown in our ablations). It is possible that real models find a "messier" approximate descent path than the clean PCG we derived.
 
 ## Future Work

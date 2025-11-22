@@ -7,7 +7,7 @@ We present empirical evidence supporting the hypothesis that Transformers implem
 To validate Theorem 1, we compared the predictions of a minimal Softmax Attention layer against a ground-truth Kernel Ridge Regression oracle using the exponential kernel $K(x, x') = \exp(\langle x, x' \rangle / \tau)$.
 
 **Results.**
-As shown in Figure 1 (`figures/route_a_mvp.png`), the Softmax model's predictions align closely with the KRR oracle, significantly outperforming a standard normalized kernel smoother (Nadaraya-Watson) baseline in terms of RMSE.
+As shown in Figure 1 (`figures/route_a_mvp.png`), the Softmax model's predictions align closely with the KRR oracle in terms of kernel geometry. Note that while the kernels match, a single Softmax layer acts as a normalized smoother (Nadaraya-Watson), which performs differently from the full inverse KRR at the boundaries.
 -   **Operator Norm**: We measured the operator norm difference $\| \tilde{K}_{softmax} - K_{exp} \|_{op}$ on the support set. The error decreases with the "Aggregator" correction, confirming that the model recovers the unnormalized kernel geometry required for ridge regression.
 -   **Temperature Sensitivity**: Ablation studies (`figures/ablations/route_a_temp.png`) demonstrate that this alignment holds across a range of temperatures $\tau$, whereas the normalized softmax baseline diverges.
 
