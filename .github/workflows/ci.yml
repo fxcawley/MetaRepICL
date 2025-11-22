@@ -22,6 +22,6 @@ jobs:
       - name: Smoke test
         run: |
           python - << 'PY'
-import sys
-print('Smoke OK')
-PY
+          import sys
+          print('Smoke OK')
+          PY
