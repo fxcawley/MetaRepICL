@@ -52,5 +52,6 @@ nav:
     - "Width-Rank": theory/width_rank.md
   - Evidence:
     - "Experiments Summary": experiments/index.md
+    - "Silent Failure Analysis": experiments/silent_failure.md
     - "Mechanistic Report": experiments/mechanistic_report.md
   - "Reproducibility": reproducibility.md

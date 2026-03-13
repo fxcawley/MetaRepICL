@@ -76,6 +76,7 @@ When model width $m$ is smaller than data dimension, the Transformer acts as a l
 
 1.  **[Worked Demo](demo.md)**: See the project in action
 2.  **[Theory](theory/index.md)**: Formal proofs (Route A, Route B, Width-Rank)
-3.  **[Evidence](experiments/index.md)**: Empirical validation and mechanistic probes
-4.  **[Reproducibility](reproducibility.md)**: Generate all figures yourself
-5.  **[Honest Assessment](status.md)**: What works, what doesn't, what's next
+3.  **[Silent Failure Analysis](experiments/silent_failure.md)**: When does the softmax-KRR gap blow up? **(New)**
+4.  **[Evidence](experiments/index.md)**: Empirical validation and mechanistic probes
+5.  **[Reproducibility](reproducibility.md)**: Generate all figures yourself
+6.  **[Honest Assessment](status.md)**: What works, what doesn't, what's next
