@@ -4,7 +4,7 @@ Let Φ ∈ R^{k×p} be support features and φ(x) ∈ R^p the query features fro
 
 \[ \tilde K_{ij} = \exp\!\big(\tfrac{1}{\tau}\langle U\phi(x_i), U\phi(x_j)\rangle \big),\qquad \tilde k_j(x) = \exp\!\big(\tfrac{1}{\tau}\langle U\phi(x_j), U\phi(x)\rangle \big). \]
 
-Then a **Deep Transformer** constructed with $L$ layers of attention heads (queries Q=UΦ, keys K=UΦ) and MLP blocks can implement **Gradient Descent** steps on the kernel ridge regression objective, converging to:
+Then a **Deep Transformer** constructed with $L$ layers of attention heads (queries Q=UΦ, keys K=UΦ) and MLP blocks can implement **Conjugate Gradient** steps on the kernel ridge regression objective, converging to:
 
 \[ f_*(x) = \tilde k(x)^\top (\tilde K + \lambda I)^{-1} y. \]
 

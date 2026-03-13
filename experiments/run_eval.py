@@ -131,12 +131,12 @@ def main(cfg: DictConfig) -> None:
 		for s in seeds:
 			res = run_route_a_minimal(
 				seed=int(s),
-				n_support=int(cfg.get("n_support", 48)),
-				n_query=int(cfg.get("n_query", 32)),
-				p=int(cfg.get("p", 16)),
-				d_proj=int(cfg.get("d_proj", 12)),
-				tau=float(cfg.get("tau", 0.5)),
-				lam=float(cfg.get("lambda", 1e-2)),
+				n_support=int(cfg.get("n_support", 24)),
+				n_query=int(cfg.get("n_query", 16)),
+				p=int(cfg.get("p", 8)),
+				d_proj=int(cfg.get("d_proj", 6)),
+				tau=float(cfg.get("tau", 10.0)),
+				lam=float(cfg.get("lambda", 1.0)),
 				noise=float(cfg.get("noise", 0.1)),
 			)
 			or_rmse.append(float(res["rmse_oracle"]))

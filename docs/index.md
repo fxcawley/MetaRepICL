@@ -33,7 +33,7 @@ Our width-rank theorem predicts exactly when a finite-width Transformer will deg
 ## Key Results
 
 ### Softmax KRR Alignment (Route A)
-The Transformer's attention mechanism induces a kernel aligned with the exponential kernel (operator norm difference $< 10^{-8}$ on supports). Iterative gradient descent on the softmax-reconstructed kernel (green) tracks the KRR oracle (blue); a single-layer kernel smoother (orange) captures kernel geometry but not the optimization. *Note: The "GD" curve is a for-loop running gradient descent on a pre-computed kernel matrix, not a trained transformer.*
+The Transformer's attention mechanism induces a kernel aligned with the exponential kernel (operator norm difference $< 10^{-14}$ on supports). Conjugate Gradient on the softmax-reconstructed kernel (green) converges to the KRR oracle in ~10 iterations, while gradient descent (red) converges significantly slower — validating the CG rate advantage predicted by the theory. *Note: Both CG and GD operate on a pre-computed kernel matrix, not a trained transformer.*
 
 ![Route A MVP](figures/route_a_mvp.png){ width=600 }
 

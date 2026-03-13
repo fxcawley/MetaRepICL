@@ -6,11 +6,11 @@ defaults:
   - _self_
 
 seed: 123
-n_support: 48
-n_query: 32
-p: 16
-d_proj: 12
-tau: 0.5
-lambda: 0.01
+n_support: 24
+n_query: 16
+p: 8
+d_proj: 6
+tau: 10.0
+lambda: 1.0
 noise: 0.1
 

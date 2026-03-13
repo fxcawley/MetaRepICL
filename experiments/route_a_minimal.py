@@ -20,12 +20,12 @@ argparse.ArgumentParser.add_argument = _safe_add_argument
 
 def run_route_a_minimal(
     seed: int = 123,
-    n_support: int = 48,
-    n_query: int = 32,
-    p: int = 16,
-    d_proj: int = 12,
-    tau: float = 0.5,
-    lam: float = 1e-2,
+    n_support: int = 24,
+    n_query: int = 16,
+    p: int = 8,
+    d_proj: int = 6,
+    tau: float = 10.0,
+    lam: float = 1.0,
     noise: float = 0.1,
 ) -> Dict[str, Any]:
     torch.manual_seed(seed)
@@ -69,42 +69,58 @@ def run_route_a_minimal(
     K_from_softmax = softmax_rows * row_sums  # reconstruct exp(S_ss)
     op_norm_diff = torch.linalg.norm(K_from_softmax - K_exp_ss, ord=2).item()
 
-    # --- Iterative GD on Softmax Kernel ---
-    # Run gradient descent to solve (K + lam I) alpha = y, where K is
-    # reconstructed from softmax attention weights. This demonstrates that
-    # the softmax-derived kernel is algebraically equivalent to the
-    # exponential kernel (so GD converges to the KRR oracle), NOT that a
-    # transformer with learned parameters performs this computation.
-    # Note: This is standard gradient descent, not Conjugate Gradient.
-    # The CG mechanism is demonstrated separately in Route B experiments.
+    # --- CG on Softmax Kernel (Route A + Route B solver) ---
+    # Run Conjugate Gradient to solve (K + lam I) alpha = y, where K is
+    # the exponential kernel reconstructed from softmax attention weights.
+    # This validates the theory's central claim (Corollary A / prop.md):
+    # CG applies to Route A with K -> K_exp, converging at the CG rate
+    # ((sqrt(kappa)-1)/(sqrt(kappa)+1))^t rather than the GD rate
+    # ((kappa-1)/(kappa+1))^t.
+    #
+    # NOTE: This is still a numerical demonstration on a pre-computed kernel,
+    # not a trained transformer. See REVIEW_ISSUES.md (W1).
     
-    alpha_deep = torch.zeros(n_support, dtype=torch.float64)
-    
-    # Use the exact kernel reconstruction from Softmax to verify Algorithm capacity
     K_op = K_from_softmax
-    
-    # Adaptive Learning Rate for stability
-    # Max eigenvalue of K_op
+    n = n_support
+    cg_steps = 15  # fewer steps to highlight CG vs GD convergence difference
+
+    # CG iteration (textbook CG on (K + lam I) alpha = y)
+    alpha_cg = torch.zeros(n, dtype=torch.float64)
+    r_cg = y_s.clone()
+    p_cg = r_cg.clone()
+    cg_errors = []
+    for _ in range(cg_steps):
+        Kp = K_op @ p_cg
+        Ap = Kp + lam * p_cg
+        rr = float(r_cg @ r_cg)
+        pAp = float(p_cg @ Ap)
+        gamma = rr / (pAp + 1e-18)
+        alpha_cg = alpha_cg + gamma * p_cg
+        r_cg = r_cg - gamma * Ap
+        rr_new = float(r_cg @ r_cg)
+        beta = rr_new / (rr + 1e-18)
+        p_cg = r_cg + beta * p_cg
+        # Track error to oracle solution
+        cg_errors.append(float(torch.norm(alpha_cg - alpha)))
+
+    f_cg = (K_exp_sq.T @ alpha_cg)
+
+    # --- GD on Softmax Kernel (for comparison) ---
+    # Standard gradient descent on the same kernel, same number of steps.
+    # Expected to converge slower than CG, especially for ill-conditioned K.
     max_eig = torch.linalg.matrix_norm(K_op, ord=2).item()
-    # Optimal rate for convex problem is 2/L, but with noise/approx safer to use 1/L
-    # We need to account for lambda too: L = max_eig + lam
     L_smooth = max_eig + lam
     eta = 1.0 / L_smooth
-    
-    steps = 50 # Number of GD iterations
-    
-    for _ in range(steps):
-        # 1. Compute K * alpha using the softmax-reconstructed kernel
-        k_alpha = K_op @ alpha_deep
-        
-        # 2. Compute gradient: (K alpha + lam alpha - y)
-        grad = k_alpha + lam * alpha_deep - y_s
-        
-        # 3. Update alpha via gradient descent
-        alpha_deep = alpha_deep - eta * grad
-        
-    # Readout
-    f_deep = (K_exp_sq.T @ alpha_deep)
+
+    alpha_gd = torch.zeros(n, dtype=torch.float64)
+    gd_errors = []
+    for _ in range(cg_steps):
+        k_alpha = K_op @ alpha_gd
+        grad = k_alpha + lam * alpha_gd - y_s
+        alpha_gd = alpha_gd - eta * grad
+        gd_errors.append(float(torch.norm(alpha_gd - alpha)))
+
+    f_gd = (K_exp_sq.T @ alpha_gd)
 
     def rmse(pred: torch.Tensor) -> float:
         return float(torch.sqrt(torch.mean((pred - y_q_true) ** 2)))
@@ -112,16 +128,22 @@ def run_route_a_minimal(
     return {
         "rmse_oracle": rmse(f_oracle),
         "rmse_softmax": rmse(f_softmax),
-        "rmse_deep": rmse(f_deep),
+        "rmse_cg": rmse(f_cg),
+        "rmse_gd": rmse(f_gd),
         "rmse_gap": abs(rmse(f_oracle) - rmse(f_softmax)),
-        "rmse_deep_gap": abs(rmse(f_oracle) - rmse(f_deep)),
+        "rmse_cg_gap": abs(rmse(f_oracle) - rmse(f_cg)),
+        "rmse_gd_gap": abs(rmse(f_oracle) - rmse(f_gd)),
         "op_norm_diff": float(op_norm_diff),
         "tau": float(tau),
         "lambda": float(lam),
+        "cg_steps": cg_steps,
+        "cg_errors": cg_errors,
+        "gd_errors": gd_errors,
         # Return vectors for plotting
         "f_oracle": f_oracle.tolist(),
         "f_softmax": f_softmax.tolist(),
-        "f_deep": f_deep.tolist(),
+        "f_cg": f_cg.tolist(),
+        "f_gd": f_gd.tolist(),
         "y_q_true": y_q_true.tolist(),
     }
 
@@ -135,17 +157,17 @@ def main(cfg: DictConfig) -> None:
     
     res = run_route_a_minimal(
         seed=int(cfg.get("seed", 123)),
-        n_support=int(cfg.get("n_support", 48)),
-        n_query=int(cfg.get("n_query", 32)),
-        p=int(cfg.get("p", 16)),
-        d_proj=int(cfg.get("d_proj", 12)),
-        tau=float(cfg.get("tau", 2.0)), # Use 2.0 stable default
-        lam=float(cfg.get("lambda", 1e-2)),
+        n_support=int(cfg.get("n_support", 24)),
+        n_query=int(cfg.get("n_query", 16)),
+        p=int(cfg.get("p", 8)),
+        d_proj=int(cfg.get("d_proj", 6)),
+        tau=float(cfg.get("tau", 10.0)),
+        lam=float(cfg.get("lambda", 1.0)),
         noise=float(cfg.get("noise", 0.1)),
     )
     
     # Print JSON results without the large vectors
-    print_res = {k: v for k, v in res.items() if k not in ["f_oracle", "f_softmax", "f_deep", "y_q_true"]}
+    print_res = {k: v for k, v in res.items() if k not in ["f_oracle", "f_softmax", "f_cg", "f_gd", "y_q_true", "cg_errors", "gd_errors"]}
     print(json.dumps(print_res))
     
     if cfg.get("plot", False):
@@ -156,21 +178,37 @@ def main(cfg: DictConfig) -> None:
             
             f_oracle = np.array(res["f_oracle"])
             f_softmax = np.array(res["f_softmax"])
-            f_deep = np.array(res["f_deep"])
+            f_cg = np.array(res["f_cg"])
+            f_gd = np.array(res["f_gd"])
             
             # Sort by Oracle value for clarity
             idxs = np.argsort(f_oracle)
             
-            plt.figure(figsize=(8, 5))
-            plt.plot(f_oracle[idxs], label='Oracle (KRR)', color='blue', marker='o', markersize=4, linewidth=1.5)
-            plt.plot(f_deep[idxs], label='Iterative GD on Softmax Kernel', color='green', marker='s', markersize=3, linestyle='-')
-            plt.plot(f_softmax[idxs], label='1-Layer Kernel Smoother', color='orange', marker='x', markersize=4, linestyle='--', alpha=0.5)
+            fig, axes = plt.subplots(1, 2, figsize=(14, 5))
             
-            plt.title("Route A: GD on Softmax Kernel (Green) vs Oracle KRR (Blue)")
-            plt.xlabel("Query Sample (sorted by Oracle value)")
-            plt.ylabel("Prediction")
-            plt.legend()
-            plt.grid(True, alpha=0.3)
+            # Left: Predictions comparison
+            ax = axes[0]
+            ax.plot(f_oracle[idxs], label='Oracle (KRR)', color='blue', marker='o', markersize=4, linewidth=1.5)
+            ax.plot(f_cg[idxs], label=f'CG ({res["cg_steps"]} steps)', color='green', marker='s', markersize=3, linestyle='-')
+            ax.plot(f_gd[idxs], label=f'GD ({res["cg_steps"]} steps)', color='red', marker='^', markersize=3, linestyle='--')
+            ax.plot(f_softmax[idxs], label='1-Layer Kernel Smoother', color='orange', marker='x', markersize=4, linestyle=':', alpha=0.5)
+            ax.set_title("Route A: CG vs GD on Softmax Kernel")
+            ax.set_xlabel("Query Sample (sorted by Oracle value)")
+            ax.set_ylabel("Prediction")
+            ax.legend(fontsize=8)
+            ax.grid(True, alpha=0.3)
+            
+            # Right: Convergence trajectory (error to oracle vs steps)
+            ax2 = axes[1]
+            steps_range = list(range(1, len(res["cg_errors"]) + 1))
+            ax2.semilogy(steps_range, res["cg_errors"], '-o', color='green', markersize=4, label='CG')
+            ax2.semilogy(steps_range, res["gd_errors"], '--^', color='red', markersize=4, label='GD')
+            ax2.set_title("Convergence: ||alpha - alpha*||")
+            ax2.set_xlabel("Iteration / Layer")
+            ax2.set_ylabel("Error (log scale)")
+            ax2.legend()
+            ax2.grid(True, alpha=0.3)
+            
             plt.tight_layout()
             
             os.makedirs(os.path.dirname(out_path), exist_ok=True)

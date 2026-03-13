@@ -13,7 +13,7 @@ $$ f(x) = \tilde{k}(x)^T (\tilde{K} + \lambda I)^{-1} y $$
 *Proof Sketch.*
 1.  **Kernel Realization**: The unnormalized attention scores $S = QK^T / \tau$ satisfy $S_{ij} = \frac{1}{\tau} \langle U\phi(x_i), U\phi(x_j) \rangle$. Thus, $\exp(S_{ij}) = \tilde{K}_{ij}$.
 2.  **Normalization Recovery**: Standard Softmax outputs $A_{ij} = \frac{\exp(S_{ij})}{Z_i}$ where $Z_i = \sum_j \exp(S_{ij})$. The aggregator token computes $Z_i$ by summing $\exp(S)$ values (via a specific head configuration) and broadcasting them, allowing the model to recover the unnormalized $\tilde{K} = \text{diag}(Z) \cdot A$.
-3.  **Optimization**: With explicit access to the matrix-vector multiplication $v \mapsto \tilde{K}v$, the model implements iterative gradient-based updates (or exact inversion via Neumann series for small $\lambda$) in subsequent MLP and attention layers.
+3.  **Optimization**: With explicit access to the matrix-vector multiplication $v \mapsto \tilde{K}v$, the model implements iterative Conjugate Gradient updates (as in Lemma 3, with $K \to \tilde{K}$) in subsequent MLP and attention layers. For small $\lambda$, exact inversion via Neumann series is also possible.
 
 ## 2. Width-Rank Tradeoff
 

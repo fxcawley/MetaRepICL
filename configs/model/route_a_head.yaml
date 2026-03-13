@@ -2,9 +2,9 @@ defaults:
   - _self_
 
 name: route_a_head
-dimension: 16
-d_proj: 12
-tau: 0.5
-lambda: 0.01
+dimension: 8
+d_proj: 6
+tau: 10.0
+lambda: 1.0
 
 

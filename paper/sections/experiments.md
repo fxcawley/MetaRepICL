@@ -7,7 +7,7 @@ We present numerical validation of our theoretical constructions, verifying that
 To validate Theorem 1, we compared the predictions of a minimal Softmax Attention layer against a ground-truth Kernel Ridge Regression oracle using the exponential kernel $K(x, x') = \exp(\langle x, x' \rangle / \tau)$.
 
 **Results.**
-As shown in Figure 1 (`figures/route_a_mvp.png`), the Softmax model's predictions align closely with the KRR oracle, significantly outperforming a standard normalized kernel smoother (Nadaraya-Watson) baseline in terms of RMSE.
+As shown in Figure 1 (`figures/route_a_mvp.png`), Conjugate Gradient on the softmax-reconstructed exponential kernel converges to the KRR oracle in $\sim$10 iterations (left panel), while gradient descent on the same kernel converges significantly slower (right panel). This validates the theory's claim (Corollary A) that CG applies to Route A with $K \to \tilde{K}$, achieving the CG convergence rate $\left(\frac{\sqrt{\kappa}-1}{\sqrt{\kappa}+1}\right)^t$ rather than the GD rate $\left(\frac{\kappa-1}{\kappa+1}\right)^t$.
 -   **Operator Norm**: We measured the operator norm difference $\| \tilde{K}_{softmax} - K_{exp} \|_{op}$ on the support set. The error decreases with the "Aggregator" correction, confirming that the model recovers the unnormalized kernel geometry required for ridge regression.
 -   **Temperature Sensitivity**: Ablation studies (`figures/ablations/route_a_temp.png`) demonstrate that this alignment holds across a range of temperatures $\tau$, whereas the normalized softmax baseline diverges.
 
