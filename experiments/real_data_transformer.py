@@ -39,8 +39,15 @@ def run_transformer_icl(
     out_dir: str = "figures/attention"
 ):
     """
-    Runs a single-layer Softmax Attention block on real text data (BoW features).
-    Visualizes the attention weights.
+    Runs a hand-coded softmax kernel smoother (Nadaraya-Watson estimator)
+    on real text data (BoW features). This has NO learned parameters —
+    no W_Q, W_K, W_V projections, no MLP, no LayerNorm, no training.
+    It computes: scores = Q @ K.T / tau, softmax(scores), weights @ V.
+    
+    Despite the function name, this is NOT a transformer — it is a
+    classical kernel smoother that predates transformers by decades.
+    We use it to test whether the Route A kernel interpretation produces
+    reasonable predictions on real data.
     """
     # Load Data
     docs_s, ys, docs_q, yq = load_dataset_from_csv(

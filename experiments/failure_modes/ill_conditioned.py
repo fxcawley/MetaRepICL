@@ -73,6 +73,16 @@ def run_experiment(n, p, seed, cond, lam, steps):
     
     # 2. Preconditioned CG (via transformation)
     # P^{-1} = 1/(diag(K) + lam)
+    #
+    # IMPORTANT CAVEAT: This transformation changes the effective problem.
+    # The preconditioned system solves (S K S + lam I) alpha_tilde = S y,
+    # which is equivalent to (K + lam * diag(K+lam)) alpha = y in the
+    # original space -- a DIFFERENT regularizer than the standard problem.
+    # So the convergence comparison between standard CG and "preconditioned"
+    # CG is somewhat apples-to-oranges: they converge to different solutions.
+    # A proper PCG implementation would apply the preconditioner within the
+    # CG iteration (modifying the inner product) without changing the target.
+    # We track convergence to each method's own target to show optimizer speed.
     K = phi @ phi.T
     diagK = np.diag(K)
     pinv = build_diag_preconditioner(diagK + lam) # returns 1/(d+eps)

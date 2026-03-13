@@ -23,9 +23,17 @@ def generate_cg_dataset(
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Generate CG state dataset for probe evaluation.
 
+    CIRCULARITY WARNING: This function creates "activations" as a known
+    random linear projection W_true @ z of the true CG states z = [alpha; r; p].
+    A linear probe can trivially recover z by inverting W_true (which is
+    almost surely invertible for a random square matrix). High cosine
+    similarity is expected from linear algebra alone — it does NOT demonstrate
+    that trained transformers encode CG states. This experiment validates the
+    *construction*, not trained models. See REVIEW_ISSUES.md (W1, W4).
+
     Returns (targets, acts_true, acts_ctrl) where:
       - targets: (num_tasks * steps, 3*n) concatenated CG state vectors [alpha; r; p]
-      - acts_true: (num_tasks * steps, 3*n) linear projection of true states
+      - acts_true: (num_tasks * steps, 3*n) linear projection of true states (W_true @ z)
       - acts_ctrl: (num_tasks * steps, 3*n) random noise (negative control)
     """
     rng = np.random.default_rng(seed)
@@ -85,8 +93,12 @@ def fit_linear_probe(X: np.ndarray, y: np.ndarray, X_test: np.ndarray = None, y_
     return cos
 
 def run_probes_per_layer(seed: int = 123, n: int = 64, p: int = 16, steps: int = 6):
+    """Probe CG states from constructed (not trained) model activations.
+    
+    See generate_cg_dataset docstring for circularity warning.
+    """
     rng = np.random.default_rng(seed)
-    W_true = rng.standard_normal((3 * n, 3 * n)) # Fixed probe projection for "true" model
+    W_true = rng.standard_normal((3 * n, 3 * n)) # Fixed linear projection (not learned)
     
     targets_by_layer = {l: [] for l in range(1, steps + 1)}
     acts_true_by_layer = {l: [] for l in range(1, steps + 1)}
@@ -141,9 +153,15 @@ def main():
     plt.ylim(-0.1, 1.1)
     plt.xlabel("Layer / Step")
     plt.ylabel("Cosine Similarity")
-    plt.title("Theoretical Recoverability of CG States")
+    plt.title("CG State Recovery from Construction (Not Trained Model)")
     plt.legend()
     plt.grid(True, alpha=0.3)
+    
+    # Add caveat annotation
+    plt.figtext(0.5, -0.02, 
+                "Note: Probes invert a known random linear map (W_true). "
+                "High similarity is expected by construction.",
+                ha='center', fontsize=8, style='italic')
     
     out_path = "docs/figures/probes/cosine_sim_layer.png"
     os.makedirs(os.path.dirname(out_path), exist_ok=True)

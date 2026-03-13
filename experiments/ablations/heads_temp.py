@@ -153,6 +153,12 @@ def run_shared_vs_dedicated_heads(seed=123, n=32, p=8, lam=1e-2, t_steps=5):
     In the constructive proof, all layers share the same Q/K/V projection
     (since the kernel K = phi @ phi.T is fixed). This test verifies that
     sharing doesn't degrade performance vs having independent heads.
+    
+    CAVEAT: "Dedicated heads" are simulated by adding noise to the feature
+    matrix at each step (not by training independent parameters via SGD).
+    This tests sensitivity to feature perturbation, not truly independent
+    learned projections. A proper test would require training transformers
+    with shared vs. independent head parameters.
     """
     rng = np.random.default_rng(seed)
     torch.manual_seed(seed)
@@ -176,8 +182,9 @@ def run_shared_vs_dedicated_heads(seed=123, n=32, p=8, lam=1e-2, t_steps=5):
     p_ded = r_ded.copy()
     
     for step in range(t_steps):
-        # Dedicated head: add small per-step noise to simulate independent parameters
-        noise_scale = 1e-6 * (step + 1)
+        # Dedicated head: add per-step noise to simulate independent parameters.
+        # Scale 1e-2 produces a meaningful perturbation (not negligible).
+        noise_scale = 1e-2 * (step + 1)
         phi_noisy = phi + noise_scale * rng.standard_normal(phi.shape)
         Kp = attention_matvec(phi_noisy, phi_noisy, p_ded)
         Ap = Kp + lam * p_ded

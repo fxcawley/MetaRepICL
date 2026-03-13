@@ -23,7 +23,7 @@ This is not a claim that "ICL = KRR." It is a constructive proof that one of the
 The "ICL is a mixture of algorithms" view (Park et al., 2024) raises a natural question: *what algorithms are in the mixture?* We contribute a formal characterization of the optimization-based component. Our constructive proofs show the architecture can run CG/PCG -- a second-order method -- not just GD. This is consistent with Fu et al.'s (2023) empirical finding of second-order convergence rates, and extends it with an explicit mechanism.
 
 ### 2. Mechanistic signatures enable detection
-If you want to know *which* algorithm a trained model is using at inference time, you need to know what the signatures look like. Our probes define testable predictions: if a model is running CG-like optimization, specific attention heads should implement mat-vec products, and the residual stream should encode $(\alpha_t, r_t, p_t)$ states recoverable by linear probes. These are falsifiable claims.
+If you want to know *which* algorithm a trained model is using at inference time, you need to know what the signatures look like. Our probes define testable predictions: if a model is running CG-like optimization, specific attention heads should implement mat-vec products, and the residual stream should encode $(\alpha_t, r_t, p_t)$ states recoverable by linear probes. These are falsifiable claims. *Current probes validate the construction only; probing trained models is the critical next step.*
 
 ### 3. Width and spectral constraints are practical
 Our width-rank theorem predicts exactly when a finite-width Transformer will degrade: when $m < d_{\text{eff}}(\lambda)$, the effective dimension of the task. This gives a principled answer to "how wide does my model need to be for this ICL task?"
@@ -33,7 +33,7 @@ Our width-rank theorem predicts exactly when a finite-width Transformer will deg
 ## Key Results
 
 ### Softmax KRR Alignment (Route A)
-The Transformer's attention mechanism induces a kernel aligned with the exponential kernel (operator norm difference $< 10^{-8}$ on supports). A constructed deep Transformer (green) tracks the KRR oracle (blue); a single-layer smoother (orange) captures kernel geometry but not the optimization.
+The Transformer's attention mechanism induces a kernel aligned with the exponential kernel (operator norm difference $< 10^{-8}$ on supports). Iterative gradient descent on the softmax-reconstructed kernel (green) tracks the KRR oracle (blue); a single-layer kernel smoother (orange) captures kernel geometry but not the optimization. *Note: The "GD" curve is a for-loop running gradient descent on a pre-computed kernel matrix, not a trained transformer.*
 
 ![Route A MVP](figures/route_a_mvp.png){ width=600 }
 

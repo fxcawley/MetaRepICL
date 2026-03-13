@@ -2,13 +2,13 @@
 
 ## What We've Built
 
-MetaRep provides constructive proofs and empirical validation that Transformer attention layers have the capacity to implement:
+MetaRep provides constructive proof sketches and numerical validation that Transformer attention layers have the capacity to implement:
 
 1. **Exponential Kernel Ridge Regression** (Route A, via softmax attention)
 2. **Preconditioned Conjugate Gradient** (Route B, via linear attention)
 3. **Spectral sketching** under width constraints (width-rank tradeoff)
 
-All claims are validated on synthetic data with mechanistic probes confirming internal state readability.
+All claims are validated on synthetic data with numerical simulations confirming internal self-consistency. No trained neural networks are involved in any experiment — all validation is on hand-built constructions. See [REVIEW_ISSUES.md](../REVIEW_ISSUES.md) for a detailed issue tracker from external review.
 
 ---
 
@@ -48,18 +48,22 @@ Park et al. (2024) argue convincingly that ICL is a **mixture of competing algor
 
 ## What's Done
 
-- Constructive proofs: LAT to CG mapping (Lemmas A-C), Route A theorem, width-rank bound
-- Empirical validation: Route A KRR alignment, failure modes, head ablations, width sweeps
-- Mechanistic probes: CG state recovery with train/test split, negative controls
+- Constructive proof sketches: LAT to CG mapping (Lemmas A-C), Route A theorem, width-rank bound (all with unresolved stubs — see S1-S5 in [REVIEW_ISSUES.md](../REVIEW_ISSUES.md))
+- Numerical validation: Route A KRR alignment, failure modes, head ablations, width sweeps (all on analytical constructions, not trained models)
+- Probe demonstration: CG state recovery from constructed embeddings with train/test split and negative controls (validates construction, not trained models — see circularity caveat)
+- Silent failure analysis: Genuine numerical analysis of when the softmax-KRR gap degrades (strongest standalone contribution)
 - Infrastructure: CI, reproducibility, Hydra configs, containerization
 
 ## What's Not Done
 
 - **Probing real LLMs** (LLaMA, GPT-class) for CG state signatures -- the critical experiment
-- **Training from scratch**: Do Transformers trained via SGD converge to CG-like solutions?
+- **Training from scratch**: Do Transformers trained via SGD converge to CG-like solutions? (Even 2-layer on synthetic linear regression would be valuable)
 - **Algorithm phase detection**: When does a model switch from retrieval to inference (KRR) mode?
 - **GLM extension**: Non-quadratic loss surfaces (logistic, Poisson) where CG becomes nonlinear CG
 - **LaTeX paper build**: No submission-ready PDF pipeline yet
+- **Complete proof stubs**: Five formal items (S1-S5) remain unresolved — tight constants, formal preconditioner, multi-output, stability, causal masking
+- **Convergence rate comparison**: Show trained transformers match CG rate vs GD rate on ill-conditioned problems
+- **Route B centering**: Formal connection between LayerNorm and the centering assumption required by Route B
 
 ## Will Anyone Care?
 

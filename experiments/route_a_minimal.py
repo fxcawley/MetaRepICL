@@ -69,11 +69,14 @@ def run_route_a_minimal(
     K_from_softmax = softmax_rows * row_sums  # reconstruct exp(S_ss)
     op_norm_diff = torch.linalg.norm(K_from_softmax - K_exp_ss, ord=2).item()
 
-    # --- Deep Transformer (GD-KRR) ---
-    # Simulate L layers of Gradient Descent using the Softmax operator.
-    # Goal: Solve (K + lam I) alpha = y
-    # Update: alpha <- alpha - eta * ((K + lam I) alpha - y)
-    # Operator: v -> K v is approximated by (Softmax(QK^T) * Z) v
+    # --- Iterative GD on Softmax Kernel ---
+    # Run gradient descent to solve (K + lam I) alpha = y, where K is
+    # reconstructed from softmax attention weights. This demonstrates that
+    # the softmax-derived kernel is algebraically equivalent to the
+    # exponential kernel (so GD converges to the KRR oracle), NOT that a
+    # transformer with learned parameters performs this computation.
+    # Note: This is standard gradient descent, not Conjugate Gradient.
+    # The CG mechanism is demonstrated separately in Route B experiments.
     
     alpha_deep = torch.zeros(n_support, dtype=torch.float64)
     
@@ -88,16 +91,16 @@ def run_route_a_minimal(
     L_smooth = max_eig + lam
     eta = 1.0 / L_smooth
     
-    steps = 50 # Depth of transformer
+    steps = 50 # Number of GD iterations
     
     for _ in range(steps):
-        # 1. Compute K * alpha using the attention mechanism approximation
+        # 1. Compute K * alpha using the softmax-reconstructed kernel
         k_alpha = K_op @ alpha_deep
         
         # 2. Compute gradient: (K alpha + lam alpha - y)
         grad = k_alpha + lam * alpha_deep - y_s
         
-        # 3. Update alpha (Residual connection with MLP)
+        # 3. Update alpha via gradient descent
         alpha_deep = alpha_deep - eta * grad
         
     # Readout
@@ -160,10 +163,10 @@ def main(cfg: DictConfig) -> None:
             
             plt.figure(figsize=(8, 5))
             plt.plot(f_oracle[idxs], label='Oracle (KRR)', color='blue', marker='o', markersize=4, linewidth=1.5)
-            plt.plot(f_deep[idxs], label='Deep Transformer (GD)', color='green', marker='s', markersize=3, linestyle='-')
-            plt.plot(f_softmax[idxs], label='1-Layer (Softmax)', color='orange', marker='x', markersize=4, linestyle='--', alpha=0.5)
+            plt.plot(f_deep[idxs], label='Iterative GD on Softmax Kernel', color='green', marker='s', markersize=3, linestyle='-')
+            plt.plot(f_softmax[idxs], label='1-Layer Kernel Smoother', color='orange', marker='x', markersize=4, linestyle='--', alpha=0.5)
             
-            plt.title("Route A: Deep Transformer Construction (Green) vs Oracle (Blue)")
+            plt.title("Route A: GD on Softmax Kernel (Green) vs Oracle KRR (Blue)")
             plt.xlabel("Query Sample (sorted by Oracle value)")
             plt.ylabel("Prediction")
             plt.legend()
