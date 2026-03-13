@@ -3,6 +3,7 @@ defaults:
   - model: route_a_head
   - logging: offline
   - experiment: route_a
+  - training: default
   - _self_
 
 seed: 123

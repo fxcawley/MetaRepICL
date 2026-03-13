@@ -13,6 +13,45 @@ if str(repo_root) not in sys.path:
 
 from src.lat.cg_stack import run_cg_with_history
 
+
+def generate_cg_dataset(
+    num_tasks: int = 20,
+    n: int = 8,
+    p: int = 4,
+    steps: int = 10,
+    seed: int = 321,
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Generate CG state dataset for probe evaluation.
+
+    Returns (targets, acts_true, acts_ctrl) where:
+      - targets: (num_tasks * steps, 3*n) concatenated CG state vectors [alpha; r; p]
+      - acts_true: (num_tasks * steps, 3*n) linear projection of true states
+      - acts_ctrl: (num_tasks * steps, 3*n) random noise (negative control)
+    """
+    rng = np.random.default_rng(seed)
+    W_true = rng.standard_normal((3 * n, 3 * n))
+
+    targets_list: List[np.ndarray] = []
+    acts_true_list: List[np.ndarray] = []
+    acts_ctrl_list: List[np.ndarray] = []
+
+    for _ in range(num_tasks):
+        phi = rng.standard_normal((n, p)).astype(np.float64)
+        y = rng.standard_normal(n).astype(np.float64)
+        hist = run_cg_with_history(phi, y, lam=1e-1, t=steps)
+
+        for a, r_, p_ in hist:
+            z = np.concatenate([a, r_, p_])
+            targets_list.append(z)
+            acts_true_list.append(W_true @ z)
+            acts_ctrl_list.append(rng.standard_normal(3 * n))
+
+    targets = np.array(targets_list)
+    acts_true = np.array(acts_true_list)
+    acts_ctrl = np.array(acts_ctrl_list)
+    return targets, acts_true, acts_ctrl
+
+
 def fit_linear_probe(X: np.ndarray, y: np.ndarray) -> float:
     # Closed-form least squares; return cosine similarity between predictions and target
     # X: (N_samples, D_in)

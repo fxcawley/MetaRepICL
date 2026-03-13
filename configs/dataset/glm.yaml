@@ -1,0 +1,6 @@
+family: logistic
+n_support: 32
+n_query: 16
+p: 8
+noise: 0.0
+seed: 123

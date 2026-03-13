@@ -1,0 +1,23 @@
+# Pre-commit hooks for MetaRep
+# Install: pre-commit install
+# Run all: pre-commit run --all-files
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: ['--maxkb=500']
+
+  - repo: local
+    hooks:
+      - id: seed-enforcement
+        name: Seed Enforcement Check
+        entry: python scripts/check_seed.py
+        language: python
+        files: ^experiments/.*\.py$
+        pass_filenames: true

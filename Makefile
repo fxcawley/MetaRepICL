@@ -15,6 +15,4 @@ route_a_plot:
 	$(PY) experiments/route_a_minimal.py --plot
 
 smoke:
-	$(PY) - << 'PY'
-print('Smoke OK')
-PY
+	bash scripts/smoke_test.sh

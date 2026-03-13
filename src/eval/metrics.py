@@ -32,3 +32,23 @@ def mean_ci(values: List[float], alpha: float = 0.05, use_t: bool = True) -> Dic
 				raise RuntimeError("scipy is required for non-0.05 alpha when use_t=False")
 	ci = scale * (s / math.sqrt(n))
 	return {"mean": m, "ci": float(ci), "n": n}
+
+
+def accuracy(y_true: np.ndarray, y_pred: np.ndarray) -> float:
+	"""Classification accuracy (for binary/multiclass predictions)."""
+	y_true = np.asarray(y_true)
+	y_pred = np.asarray(y_pred)
+	if y_pred.dtype in (np.float32, np.float64):
+		y_pred = (y_pred >= 0.5).astype(int)
+	return float(np.mean(y_true == y_pred))
+
+
+def r_squared(y_true: np.ndarray, y_pred: np.ndarray) -> float:
+	"""Coefficient of determination (R^2)."""
+	y_true = np.asarray(y_true, dtype=np.float64)
+	y_pred = np.asarray(y_pred, dtype=np.float64)
+	ss_res = np.sum((y_true - y_pred) ** 2)
+	ss_tot = np.sum((y_true - np.mean(y_true)) ** 2)
+	if ss_tot < 1e-12:
+		return 1.0 if ss_res < 1e-12 else 0.0
+	return float(1.0 - ss_res / ss_tot)

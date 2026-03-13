@@ -34,7 +34,7 @@ try:
 	from experiments.precond import run_precond
 	from experiments.route_a_end2end import route_a_end2end
 	from experiments.route_b_approx import run_cg_route_b
-	from experiments.probes.state_probes import run_probes
+	from experiments.probes.state_probes import run_probes_per_layer as run_probes
 	from experiments.real_data_eval import run_real_data_eval
 except ImportError:
 	from baselines.ridge_oracle import run_ridge_oracle
@@ -44,7 +44,7 @@ except ImportError:
 	from precond import run_precond
 	from route_a_end2end import route_a_end2end
 	from route_b_approx import run_cg_route_b
-	from probes.state_probes import run_probes
+	from probes.state_probes import run_probes_per_layer as run_probes
 	from real_data_eval import run_real_data_eval
 
 from src.eval.metrics import mean_ci
@@ -187,12 +187,13 @@ def main(cfg: DictConfig) -> None:
 		res = run_cg_route_b(phi, y, lam, t=int(cfg.get("steps", 5)), epsilon=epsilon)
 		print(json.dumps(res))
 	elif target == "probes":
-		res = run_probes(
+		layers, sims_true, sims_ctrl = run_probes(
 			seed=int(cfg.get("seed", 123)),
 			n=int(cfg.get("n_support", 64)),
 			p=int(cfg.get("p", 16)),
 			steps=int(cfg.get("steps", 4))
 		)
+		res = {"layers": layers, "cosine_true": sims_true, "cosine_ctrl": sims_ctrl}
 		print(json.dumps(res))
 	elif target == "real_data":
 		cwd = Path(__file__).resolve().parent
