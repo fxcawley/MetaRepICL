@@ -20,13 +20,14 @@ Parsed from an OpenReview-style external review (March 2025). Issues are categor
 
 **Experiment 2: Mixed-kappa training** (`experiments/train_mixed_kappa.py`):
 - Same architecture trained on kappa in {1, 10, 50, 100, 500}, 50k steps, ~23 min
-- **Probe finding**: Neither CG nor GD probes recover state variables (both near 0.02). Model uses a different internal representation.
-- **Convergence finding (key result)**: The model's per-layer prediction error decays **dramatically faster than both CG and GD theory** at high kappa:
-  - kappa=100: Model 0.002, CG 0.012, GD 0.644
-  - kappa=500: Model 0.001, CG 0.140, GD 0.916
-  - The model converges 200x faster than CG and 1300x faster than GD at kappa=500
+- **Probe finding**: GD probes consistently outperform CG probes (GD 0.06-0.14 vs CG 0.03-0.09). Both low but GD consistently higher.
+- **Convergence finding (CORRECTED)**: Comparison against **actual CG/GD trajectories** (not theoretical bounds — an earlier version used the wrong condition number). Results:
+  - kappa_input=10 (cond=2731): Model 0.009, CG 0.009, GD 0.465 -- **Model matches CG, both >> GD**
+  - kappa_input=100 (cond=23012): Model 0.002, CG 0.072, GD 0.643 -- **Model > CG >> GD**
+  - kappa_input=500 (cond=109000): Model 0.001, CG 0.053, GD 0.763 -- **Model > CG >> GD**
+  - CG's underperformance at high kappa is partly due to float64 numerical degradation (CG converges in rank(K)+1=11 exact-arithmetic steps but accumulates error at cond~10^5)
 
-**Summary**: The trained model does NOT implement textbook GD (ruled out by convergence rates at high kappa). It converges faster than textbook CG. Its internal representation doesn't map cleanly onto either CG or GD state variables. This suggests the model learns a qualitatively different, potentially preconditioned or accelerated optimization scheme.
+**Summary (corrected)**: Model >> GD at all kappas (definitive). Model is CG-competitive at moderate kappa and outperforms CG at high kappa, but the advantage is partly due to CG's numerical instability rather than the model implementing a fundamentally faster algorithm. The model appears to learn an optimization scheme with implicit numerical regularization — better than GD, CG-competitive, with better numerical stability.
 
 **Remaining work**:
 - Head-drop ablation on trained models

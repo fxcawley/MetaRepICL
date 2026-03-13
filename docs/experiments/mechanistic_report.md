@@ -107,60 +107,67 @@ This experiment addresses the critical gap identified in the external review (W1
 
 ## 6. Mixed-Kappa Training Experiment (NEW)
 
-To provide a fairer test of CG vs GD, we trained a second model on tasks with varying condition numbers $\kappa \in \{1, 10, 50, 100, 500\}$ sampled uniformly per batch. Same architecture (12 layers, 256-dim, 4 heads, 50k steps, ~23 min on RTX PRO 2000 Blackwell). Final loss: 0.014.
+To provide a fairer test of CG vs GD, we trained a second model on tasks with varying condition numbers $\kappa_{\text{input}} \in \{1, 10, 50, 100, 500\}$ sampled uniformly per batch. Same architecture (12 layers, 256-dim, 4 heads, 50k steps, ~23 min on RTX PRO 2000 Blackwell). Final loss: 0.014. Probed with 500 problems per kappa level.
 
 ### Probe Results (Stratified by $\kappa$)
 
-| $\kappa$ | CG probe | GD probe | Winner |
-|-----------|----------|----------|--------|
-| 1         | 0.017    | 0.027    | tie    |
-| 10        | 0.003    | 0.025    | tie    |
-| 50        | 0.009    | 0.022    | tie    |
-| 100       | 0.040    | 0.047    | tie    |
-| 500       | -0.011   | -0.000   | tie    |
+| $\kappa_{\text{input}}$ | CG probe | GD probe | Winner |
+|--------------------------|----------|----------|--------|
+| 1                        | 0.063    | **0.107**| GD     |
+| 10                       | 0.086    | **0.138**| GD     |
+| 50                       | 0.039    | 0.059    | tie    |
+| 100                      | 0.035    | 0.057    | GD     |
+| 500                      | 0.026    | 0.012    | tie    |
 
-**Neither CG nor GD states are recoverable from the mixed-kappa model's activations.** Both probes score near zero. This contrasts sharply with the isotropic model (Section 5), where GD probes scored 0.298. The model trained on diverse conditioning levels appears to use an internal representation that does not map cleanly onto either CG or GD state variables.
+GD probes consistently outperform CG probes across all kappa levels. Both are low (compared to 0.298 for the isotropic model), suggesting the mixed-kappa model uses a representation that doesn't map cleanly onto either algorithm's state variables, but to the extent it resembles either, it's more GD-like.
 
 ![Probes by Kappa](../../docs/figures/trained_mixed/probe_by_kappa.png){ width=700 }
 
 ### Convergence Rate Analysis: The Key Finding
 
-Despite the low probe similarities, the **behavioral convergence test** reveals a striking result. The model's per-layer prediction error decays dramatically faster than both CG and GD theoretical rates:
+**Correction note**: An earlier version of this analysis compared against theoretical CG/GD rate bounds using the input condition number $\kappa_{\text{input}}$, not the actual $\text{cond}(K + \lambda I)$. Since $K = XX^T$ has rank $p=10$ with $n=20$ rows, the actual condition number is 200-500$\times$ larger than $\kappa_{\text{input}}$. The corrected analysis below compares against **actual CG and GD trajectories** computed per-problem, not theoretical bounds.
 
-| $\kappa$ | Model (L12) | CG theory (L12) | GD theory (L12) | Verdict |
-|-----------|-------------|------------------|------------------|---------|
-| 1         | 0.015       | 0.000            | 0.000            | All converge |
-| 10        | 0.007       | 0.000            | 0.012            | Model $\approx$ CG |
-| 50        | 0.005       | 0.002            | 0.415            | Model $\gtrsim$ CG $\gg$ GD |
-| 100       | 0.002       | 0.012            | 0.644            | **Model $>$ CG $\gg$ GD** |
-| 500       | 0.001       | 0.140            | 0.916            | **Model $\gg$ CG $\gg$ GD** |
+| $\kappa_{\text{input}}$ | $\text{cond}(K{+}\lambda I)$ | Model (L12) | Actual CG | Actual GD | Verdict |
+|--------------------------|------------------------------|-------------|-----------|-----------|---------|
+| 1                        | 497                          | 0.069       | ~0.000    | 0.311     | CG converges exactly; Model $\gg$ GD |
+| 10                       | 2,731                        | 0.009       | 0.009     | 0.465     | Model $\approx$ CG $\gg$ GD |
+| 50                       | 11,897                       | 0.003       | 0.096     | 0.524     | Model $>$ CG $\gg$ GD |
+| 100                      | 23,012                       | 0.002       | 0.072     | 0.643     | Model $>$ CG $\gg$ GD |
+| 500                      | 108,902                      | 0.001       | 0.053     | 0.763     | Model $>$ CG $\gg$ GD |
 
-*(Values are normalized prediction error at layer 12, relative to layer 1.)*
+*(Values are normalized prediction MSE at layer/step 12, relative to GD step-1 error.)*
 
 ![Convergence by Kappa](../../docs/figures/trained_mixed/convergence_by_kappa.png){ width=700 }
 
-At $\kappa = 500$: the model reduces error to 0.07% of its layer-1 value, while CG theory predicts 14% and GD theory predicts 92%. **The model converges 200$\times$ faster than CG and 1300$\times$ faster than GD.**
+**Key observations**:
+
+- **Model $\gg$ GD at all kappas**: The model's layer-12 error is 5-1200$\times$ smaller than GD's step-12 error. GD is definitively ruled out as the model's mechanism.
+- **Model $\approx$ CG at low kappa**: At $\kappa_{\text{input}} = 10$, the model (0.009) matches CG (0.009) almost exactly. Both dramatically outperform GD (0.465).
+- **Model $>$ CG at high kappa**: At $\kappa_{\text{input}} \geq 50$, the model outperforms CG by 15-80$\times$. This is partly because CG accumulates floating-point error at the very high actual condition numbers ($\text{cond}(K+\lambda I) \sim 10^4$-$10^5$), while the model maintains numerical stability. CG converges in $\leq \text{rank}(K)+1 = 11$ exact-arithmetic steps but degrades in float64 at high conditioning.
+- **At $\kappa_{\text{input}} = 1$**: CG converges to machine precision ($\sim 0$) while the model reaches 0.069 — the model is *slower* than ideal CG for well-conditioned problems.
 
 ### Interpretation
 
-1. **The model does NOT implement textbook GD.** At $\kappa \geq 50$, the model converges far faster than the GD rate $((\kappa-1)/(\kappa+1))^t$. This definitively rules out gradient descent as the mechanism.
+1. **Model $\gg$ GD**: Definitively rules out gradient descent as a complete description of the model's optimization mechanism. Extends von Oswald et al. (2023) by showing the gap grows with conditioning.
 
-2. **The model converges faster than textbook CG at high $\kappa$.** At $\kappa = 100$-$500$, the model outperforms even the CG rate $(({\sqrt{\kappa}-1})/({\sqrt{\kappa}+1}))^t$. This suggests the model may implement a preconditioned or accelerated variant, or an altogether different optimization scheme.
+2. **Model $\approx$ CG, with better numerical stability**: The model's convergence profile is CG-competitive at moderate conditioning and better at high conditioning, but this advantage is partly due to CG's numerical degradation rather than the model implementing a fundamentally faster algorithm. The model appears to have learned an optimization scheme with implicit numerical regularization.
 
-3. **Internal states don't match CG or GD, but behavior is super-CG-fast.** The probe analysis shows the model's intermediate representations don't encode clean CG or GD state vectors. Yet the behavioral convergence is faster than both. The model appears to use a qualitatively different internal representation to achieve fast convergence.
+3. **Model $<$ ideal CG for well-conditioned problems**: When CG converges exactly ($\kappa_{\text{input}} = 1$), the model doesn't reach the same precision. This is expected: a 12-layer transformer with finite width implementing approximate optimization steps cannot match exact CG in exact arithmetic.
 
-4. **Consistency with Fu et al. (2023)**: The finding that trained transformers converge faster than GD is consistent with the empirical "second-order convergence" observed by Fu et al. Our contribution is showing that the rate is not just faster-than-GD but potentially faster-than-CG, suggesting even more efficient optimization mechanisms.
+4. **GD probes still win over CG probes**: Despite CG-competitive *behavioral* convergence, the internal states are more GD-like than CG-like. This suggests the model achieves fast convergence through a mechanism that more closely resembles an accelerated/preconditioned gradient method than textbook CG.
 
 ### Caveats
 
-- Per-layer readout heads were trained on the same mixed-kappa distribution and may learn non-trivial mappings that overstate convergence
-- The CG/GD theory rates are for the dot-product kernel with $\lambda = 0.1$; the model may internally use a different effective kernel or regularization
-- 200 problems per kappa is moderate; larger probe datasets could change the probe results
-- The model has 9.5M parameters for 20-dimensional problems — high capacity may enable shortcuts not available to CG/GD
+- Per-layer readout heads were trained on the mixed-kappa distribution and may learn non-trivial mappings
+- CG's degradation at high conditioning inflates the model's apparent advantage; with higher-precision arithmetic CG would perform better
+- The model has 9.5M parameters for 20-dimensional problems — high capacity may enable task-specific shortcuts
+- 500 problems per kappa with 256-dim activations and 20-dim targets: probe is somewhat underdetermined (400 training samples)
 
 ### Future Work
 
-- Test pre-trained LLMs (GPT-2, LLaMA) for CG signatures during ICL
-- Use the A-norm ($\|e_t\|_A$) for convergence comparison
-- Investigate what optimization algorithm the model actually implements (neither CG nor GD fits cleanly)
-- Compare with explicitly preconditioned CG (PCG) trajectories
+- Compare against preconditioned CG with optimal (Jacobi) preconditioner
+- Compare against Chebyshev iteration tuned to each task's spectral range
+- Test with MLP probes (nonlinear) to see if CG/GD states are encoded nonlinearly
+- Probe for spectral quantities (eigenvalues, eigenbasis projections) instead of CG/GD state variables
+- Training distribution ablation: at what kappa distribution does the model switch from GD-like to its faster algorithm?
+- Test pre-trained LLMs (GPT-2, LLaMA) for optimization structure during ICL
