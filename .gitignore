@@ -51,3 +51,6 @@ wandb/
 
 # Submission
 submission_package.zip
+
+# Model checkpoints (too large for git)
+*.pt

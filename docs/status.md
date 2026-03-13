@@ -52,12 +52,13 @@ Park et al. (2024) argue convincingly that ICL is a **mixture of competing algor
 - Numerical validation: Route A KRR alignment, failure modes, head ablations, width sweeps (all on analytical constructions, not trained models)
 - Probe demonstration: CG state recovery from constructed embeddings with train/test split and negative controls (validates construction, not trained models — see circularity caveat)
 - Silent failure analysis: Genuine numerical analysis of when the softmax-KRR gap degrades (strongest standalone contribution)
+- **Trained transformer experiment** (NEW): 12-layer transformer (9.5M params) trained on ICL linear regression via SGD. Probed for CG vs GD state variables. **Result: model is more GD-like than CG-like** (GD probe cos sim 0.298 vs CG 0.184). See [mechanistic report](experiments/mechanistic_report.md#5-probing-a-trained-transformer-new).
 - Infrastructure: CI, reproducibility, Hydra configs, containerization
 
 ## What's Not Done
 
-- **Probing real LLMs** (LLaMA, GPT-class) for CG state signatures -- the critical experiment
-- **Training from scratch**: Do Transformers trained via SGD converge to CG-like solutions? (Even 2-layer on synthetic linear regression would be valuable)
+- **Probing real LLMs** (LLaMA, GPT-class) for CG state signatures
+- **Mixed-kappa training**: Train on tasks with varying condition numbers where CG and GD rates diverge, for a fairer CG vs GD comparison
 - **Algorithm phase detection**: When does a model switch from retrieval to inference (KRR) mode?
 - **GLM extension**: Non-quadratic loss surfaces (logistic, Poisson) where CG becomes nonlinear CG
 - **LaTeX paper build**: No submission-ready PDF pipeline yet

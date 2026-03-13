@@ -9,21 +9,22 @@ Parsed from an OpenReview-style external review (March 2025). Issues are categor
 
 ## Critical Issues
 
-### W1: No experiments with actual transformers
-**Status**: OPEN (future work)
+### W1: No experiments with actual transformers ~~[PARTIALLY FIXED]~~
+**Status**: PARTIALLY FIXED (first trained-model experiment completed; result does NOT support CG hypothesis)
 **Severity**: Critical
-**Description**: Not a single experiment involves a neural network trained via SGD. Every "experiment" is analytical/numerical:
-- `route_a_minimal.py`: "Deep Transformer (GD)" is a hand-written for-loop running gradient descent on a pre-computed kernel matrix.
-- `state_probes.py`: Probes test whether a linear map is invertible (tautological -- `W_true @ z` is trivially recoverable by linear regression).
-- `real_data_transformer.py`: Hand-coded `Q @ K.T / tau` + `softmax()` -- a Nadaraya-Watson kernel smoother, not a transformer.
-- `width_rank.py`: Random Gaussian projection + ridge regression (standard compressed sensing).
-- All other experiments are numerical verifications of formulas with no learned parameters.
+**Description**: Previously, not a single experiment involved a neural network trained via SGD.
 
-**Required work**:
-1. Train a transformer (even 2-12 layers) on ICL tasks (synthetic linear regression) via SGD
-2. Probe internal states for CG variables (alpha_t, r_t, p_t)
-3. Compare convergence signatures against GD-ICL baseline (von Oswald et al.)
-4. Show convergence rates match CG rate `((sqrt(kappa)-1)/(sqrt(kappa)+1))^t` vs GD rate `((kappa-1)/(kappa+1))^t`
+**Experiment completed** (`experiments/train_and_probe.py`):
+- Trained a 12-layer transformer (9.5M params, 256-dim, 4 heads) on ICL linear regression via SGD (50k steps, batch 64, ~21 min on RTX PRO 2000 Blackwell)
+- Model achieves MSE 0.013 (near noise floor sigma^2=0.01), confirming strong ICL performance
+- Probed per-layer activations for CG vs GD state variables using linear probes (500 test problems, 80/20 split)
+
+**Key finding**: The trained model's internal states are **more aligned with GD than CG** (GD probe mean cosine sim = 0.298 vs CG = 0.184, both above random = 0.001). This is consistent with von Oswald et al. (2023). The CG hypothesis is not supported by this experiment.
+
+**Caveat**: CG converges faster than GD, so CG state variables have less cross-problem variance at later layers, making them inherently harder to probe. Training on ill-conditioned data (where CG converges slowly) would provide a fairer comparison.
+
+**Remaining work** (items 4-7 from original list):
+4. Train on mixed-kappa data and compare convergence rates against CG vs GD theory
 5. Head-drop ablation on trained models showing CG-specific degradation
 6. Test silent failure predictions on trained transformers
 7. (Stretch) Probe pre-trained LLMs (GPT-2, LLaMA) for CG state signatures during ICL
