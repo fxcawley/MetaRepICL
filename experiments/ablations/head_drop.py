@@ -86,6 +86,49 @@ def run_head_drop_ablation(
         "improvement_factor": err_ablated / (err_full + 1e-9)
     }
 
+def run_matvec_head_ablation(
+    seed: int = 123,
+    n: int = 64,
+    p: int = 16,
+    epsilon: float = 1e-4
+):
+    """
+    Ablate Head 1 (scaled softmax) and keep only Head 2 (uniform mean).
+    This tests the necessity of the dot-product attention head.
+    Without Head 1, we only have the mean correction term.
+    """
+    torch.manual_seed(seed)
+    
+    Q = torch.randn(1, n, p)
+    K = torch.randn(1, n, p)
+    V = torch.randn(1, n, 1)
+    
+    # Full Model
+    scale = epsilon
+    scores = torch.bmm(Q, K.transpose(1, 2)) * scale
+    attn_probs = torch.softmax(scores, dim=-1)
+    head1 = torch.bmm(attn_probs, V)
+    
+    mean_v = V.mean(dim=1, keepdim=True)
+    head2 = mean_v.expand_as(head1)
+    
+    approx_full = (head1 - head2) * (n / epsilon)
+    
+    # Ablated: Head 2 only (uniform mean, no scaled attention)
+    # Without the attention head, output is just -mean(V) * (N/eps) everywhere
+    approx_no_matvec = (-head2) * (n / epsilon)
+    
+    exact = torch.bmm(torch.bmm(Q, K.transpose(1, 2)), V)
+    
+    def rel_err(pred, true):
+        return float(torch.norm(pred - true) / torch.norm(true))
+    
+    return {
+        "err_full": rel_err(approx_full, exact),
+        "err_no_matvec": rel_err(approx_no_matvec, exact),
+        "degradation_factor": rel_err(approx_no_matvec, exact) / (rel_err(approx_full, exact) + 1e-9)
+    }
+
 @hydra.main(config_path="../../configs", config_name="config", version_base=None)
 def main(cfg: DictConfig):
     parser = argparse.ArgumentParser()
@@ -103,6 +146,14 @@ def main(cfg: DictConfig):
         epsilon=float(cfg.get("epsilon", 1e-4))
     )
     print(json.dumps(res))
+    
+    res_mv = run_matvec_head_ablation(
+        seed=int(cfg.get("seed", 123)),
+        n=int(cfg.get("n_support", 64)),
+        p=int(cfg.get("p", 16)),
+        epsilon=float(cfg.get("epsilon", 1e-4))
+    )
+    print(json.dumps(res_mv))
     
     if plot:
         try:

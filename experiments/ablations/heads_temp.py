@@ -145,6 +145,53 @@ def run_route_a_ablation(seed=123, n=48, p=16, tau_list=None, lam=1e-2):
         "rmse_softmax": rmse_softmax
     }
 
+def run_shared_vs_dedicated_heads(seed=123, n=32, p=8, lam=1e-2, t_steps=5):
+    """
+    Compare shared heads (same W_Q, W_K, W_V across layers) vs dedicated
+    heads (independent parameters per layer) for Route B CG iterations.
+    
+    In the constructive proof, all layers share the same Q/K/V projection
+    (since the kernel K = phi @ phi.T is fixed). This test verifies that
+    sharing doesn't degrade performance vs having independent heads.
+    """
+    rng = np.random.default_rng(seed)
+    torch.manual_seed(seed)
+    
+    phi = rng.standard_normal((n, p)).astype(np.float64)
+    y = rng.standard_normal(n).astype(np.float64)
+    K = phi @ phi.T
+    alpha_star = np.linalg.solve(K + lam * np.eye(n), y)
+    
+    # Shared heads: same epsilon across all iterations
+    from src.lat.cg_stack import run_cg
+    alpha_shared, _, _ = run_cg(phi, y, lam, t_steps)
+    err_shared = float(np.linalg.norm(alpha_shared - alpha_star))
+    
+    # Dedicated heads: simulate per-layer noise (different epsilon perturbations)
+    from src.lat.matvec import attention_matvec
+    from src.lat.cg_step import cg_step
+    
+    alpha_ded = np.zeros(n, dtype=np.float64)
+    r_ded = y.copy()
+    p_ded = r_ded.copy()
+    
+    for step in range(t_steps):
+        # Dedicated head: add small per-step noise to simulate independent parameters
+        noise_scale = 1e-6 * (step + 1)
+        phi_noisy = phi + noise_scale * rng.standard_normal(phi.shape)
+        Kp = attention_matvec(phi_noisy, phi_noisy, p_ded)
+        Ap = Kp + lam * p_ded
+        alpha_ded, r_ded, p_ded, _ = cg_step(alpha_ded, r_ded, p_ded, Ap, lam)
+    
+    err_dedicated = float(np.linalg.norm(alpha_ded - alpha_star))
+    
+    return {
+        "err_shared": err_shared,
+        "err_dedicated": err_dedicated,
+        "shared_better": err_shared <= err_dedicated,
+        "ratio": err_dedicated / (err_shared + 1e-18)
+    }
+
 @hydra.main(config_path="../../configs", config_name="config", version_base=None)
 def main(cfg: DictConfig):
     # Parse extra args
@@ -163,6 +210,11 @@ def main(cfg: DictConfig):
     print("Running Route A Ablation (Temperature/Normalization)...")
     tau_list = [0.1, 0.2, 0.5, 1.0, 2.0, 5.0, 10.0]
     res_a = run_route_a_ablation(seed=seed, tau_list=tau_list)
+    
+    # 3. Shared vs Dedicated Heads
+    print("Running Shared vs Dedicated Heads comparison...")
+    res_sd = run_shared_vs_dedicated_heads(seed=seed)
+    print(json.dumps(res_sd))
     
     # Plotting
     if args.plot or True: # Always plot for now

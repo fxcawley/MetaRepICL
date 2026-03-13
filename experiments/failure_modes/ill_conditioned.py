@@ -1,8 +1,18 @@
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-# import hydra
-# from omegaconf import DictConfig
+import hydra
+from omegaconf import DictConfig
+
+import argparse
+_orig_add_argument = argparse.ArgumentParser.add_argument
+def _safe_add_argument(self, *args, **kwargs):
+    if 'help' in kwargs:
+        h = kwargs['help']
+        if hasattr(h, '__class__') and h.__class__.__name__ == 'LazyCompletionHelp':
+            kwargs['help'] = "Shell completion"
+    return _orig_add_argument(self, *args, **kwargs)
+argparse.ArgumentParser.add_argument = _safe_add_argument
 from src.lat.cg_stack import run_cg
 from src.lat.preconditioner import build_diag_preconditioner
 
@@ -109,36 +119,43 @@ def run_experiment(n, p, seed, cond, lam, steps):
     
     return errs_std, errs_pre
 
-def main():
-    # Parameters
-    n = 128
-    p = 64
-    seed = 42
-    lam = 0.01
-    steps = 15
+@hydra.main(config_path="../../configs", config_name="config", version_base=None)
+def main(cfg: DictConfig):
+    n = int(cfg.get("n_support", 128))
+    p = int(cfg.get("p", 64))
+    seed = int(cfg.get("seed", 42))
+    lam = float(cfg.get("lambda", 0.01))
+    steps = int(cfg.get("steps", 15))
     
-    # Sweep condition numbers
     conds = [1.0, 10.0, 100.0, 1000.0]
     
     results = {}
+    passed = True
     
     plt.figure(figsize=(10, 6))
-    
     colors = plt.cm.viridis(np.linspace(0, 1, len(conds)))
     
     for i, cond in enumerate(conds):
         print(f"Running for condition number: {cond}")
         errs_std, errs_pre = run_experiment(n, p, seed, cond, lam, steps)
         
-        # Plot
         plt.plot(errs_std, linestyle='-', color=colors[i], label=f'Std (cond={cond})')
         plt.plot(errs_pre, linestyle='--', color=colors[i], label=f'Pre (cond={cond})')
         
-        results[cond] = {
-            "std": errs_std[-1],
-            "pre": errs_pre[-1]
+        results[str(cond)] = {
+            "std_final": errs_std[-1],
+            "pre_final": errs_pre[-1],
         }
         
+        # Quantitative pass/fail: preconditioner should improve on ill-conditioned problems
+        if cond >= 100.0:
+            if errs_pre[-1] >= errs_std[-1]:
+                print(f"  WARN: Preconditioner did not help at cond={cond}")
+                passed = False
+            else:
+                improvement = errs_std[-1] / (errs_pre[-1] + 1e-18)
+                print(f"  OK: {improvement:.1f}x improvement with preconditioner")
+    
     plt.yscale('log')
     plt.xlabel('CG Steps')
     plt.ylabel('Error ||alpha - alpha*||')
@@ -150,6 +167,10 @@ def main():
     out_path = "docs/figures/failure_modes/ill_conditioned_cg.png"
     plt.savefig(out_path)
     print(f"Saved plot to {out_path}")
+    
+    import json
+    print(json.dumps(results))
+    print(f"Quantitative check: {'PASSED' if passed else 'FAILED'}")
 
 if __name__ == "__main__":
     main()

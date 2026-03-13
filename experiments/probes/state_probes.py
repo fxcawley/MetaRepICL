@@ -52,7 +52,7 @@ def generate_cg_dataset(
     return targets, acts_true, acts_ctrl
 
 
-def fit_linear_probe(X: np.ndarray, y: np.ndarray) -> float:
+def fit_linear_probe(X: np.ndarray, y: np.ndarray, X_test: np.ndarray = None, y_test: np.ndarray = None) -> float:
     # Closed-form least squares; return cosine similarity between predictions and target
     # X: (N_samples, D_in)
     # y: (N_samples, D_out)
@@ -68,9 +68,12 @@ def fit_linear_probe(X: np.ndarray, y: np.ndarray) -> float:
     except np.linalg.LinAlgError:
         return 0.0
     
-    pred = X @ W
+    # Evaluate on test set if provided, otherwise train set
+    X_eval = X_test if X_test is not None else X
+    y_eval = y_test if y_test is not None else y
+    pred = X_eval @ W
     pred_flat = pred.flatten()
-    y_flat = y.flatten()
+    y_flat = y_eval.flatten()
     
     norm_p = np.linalg.norm(pred_flat)
     norm_y = np.linalg.norm(y_flat)
@@ -104,7 +107,7 @@ def run_probes_per_layer(seed: int = 123, n: int = 64, p: int = 16, steps: int =
             acts_true_by_layer[layer_idx].append(W_true @ z)
             acts_ctrl_by_layer[layer_idx].append(rng.standard_normal(3 * n))
             
-    # Fit probes
+    # Fit probes with train/test split
     layers = list(range(1, steps + 1))
     sims_true = []
     sims_ctrl = []
@@ -114,8 +117,16 @@ def run_probes_per_layer(seed: int = 123, n: int = 64, p: int = 16, steps: int =
         X_ctrl = np.array(acts_ctrl_by_layer[l])
         Y = np.array(targets_by_layer[l])
         
-        sims_true.append(fit_linear_probe(X_true, Y))
-        sims_ctrl.append(fit_linear_probe(X_ctrl, Y))
+        # 80/20 train/test split
+        n_total = X_true.shape[0]
+        n_train = max(1, int(0.8 * n_total))
+        
+        X_true_train, X_true_test = X_true[:n_train], X_true[n_train:]
+        X_ctrl_train, X_ctrl_test = X_ctrl[:n_train], X_ctrl[n_train:]
+        Y_train, Y_test = Y[:n_train], Y[n_train:]
+        
+        sims_true.append(fit_linear_probe(X_true_train, Y_train, X_true_test, Y_test))
+        sims_ctrl.append(fit_linear_probe(X_ctrl_train, Y_train, X_ctrl_test, Y_test))
         
     return layers, sims_true, sims_ctrl
 

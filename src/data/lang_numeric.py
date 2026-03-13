@@ -156,3 +156,41 @@ def load_dataset_from_csv(
         labels[n_support:n_support+n_query]
     )
 
+
+def bow_embed(docs: List[str], vocab: List[str] = None, max_features: int = 50) -> np.ndarray:
+    """Simple bag-of-words embedding for converting text to feature vectors.
+    
+    Args:
+        docs: List of text documents.
+        vocab: Optional fixed vocabulary. If None, builds from docs.
+        max_features: Maximum number of features (vocabulary size).
+    
+    Returns:
+        X: (n_docs, n_features) feature matrix.
+    """
+    if vocab is None:
+        # Build vocabulary from word frequencies
+        word_counts: Dict[str, int] = {}
+        for doc in docs:
+            for word in doc.lower().split():
+                word_counts[word] = word_counts.get(word, 0) + 1
+        # Take top-k most frequent words
+        sorted_words = sorted(word_counts.items(), key=lambda x: -x[1])
+        vocab = [w for w, _ in sorted_words[:max_features]]
+    
+    word2idx = {w: i for i, w in enumerate(vocab)}
+    n_features = len(vocab)
+    X = np.zeros((len(docs), n_features), dtype=np.float64)
+    
+    for i, doc in enumerate(docs):
+        for word in doc.lower().split():
+            if word in word2idx:
+                X[i, word2idx[word]] += 1.0
+    
+    # L2 normalize rows (avoid zero division)
+    norms = np.linalg.norm(X, axis=1, keepdims=True)
+    norms = np.where(norms < 1e-12, 1.0, norms)
+    X = X / norms
+    
+    return X
+

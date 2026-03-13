@@ -1,0 +1,4 @@
+n_support: 16
+n_query: 8
+n_tokens_per_doc: 10
+seed: 123

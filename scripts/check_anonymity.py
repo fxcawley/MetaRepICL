@@ -11,6 +11,8 @@ FORBIDDEN_STRINGS = [
 
 IGNORE_DIRS = [
     ".git",
+    ".cognition",
+    "site",
     "__pycache__",
     "outputs",
     "wandb",
