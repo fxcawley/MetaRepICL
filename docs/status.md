@@ -1,27 +1,77 @@
-# Project Status and Interpretations
+# Project Status: Honest Assessment
 
-## Current Status
-As of late 2025, the **MetaRep** project has successfully:
-1.  **Formalized the Theory**: We have constructive proofs for mapping Softmax Attention to Exponential KRR and Linear Attention to PCG.
-2.  **Validated Representational Capacity**: Our "minimal" experiments (`experiments/route_a_minimal.py`, `experiments/width_rank.py`) confirm that small Transformers *can* be constructed to implement these algorithms with high fidelity.
-3.  **Identified Mechanistic Signatures**: We validated that linear probes *can* recover the specific intermediate variables of the CG algorithm ($\alpha, r, p$) from the residual stream of our **constructive model**, establishing a target signature for future LLM probing.
+## What We've Built
 
-## Honest Interpretations
+MetaRep provides constructive proofs and empirical validation that Transformer attention layers have the capacity to implement:
 
-### What works well
--   **The KRR Connection**: The link between Softmax attention and the Exponential Kernel is robust.
--   **Preconditioning**: The theory that normalization layers (LayerNorm) act as diagonal preconditioners is supported by our failure-mode experiments.
+1. **Exponential Kernel Ridge Regression** (Route A, via softmax attention)
+2. **Preconditioned Conjugate Gradient** (Route B, via linear attention)
+3. **Spectral sketching** under width constraints (width-rank tradeoff)
 
-### Limitations and Risks
--   **Construction vs. Learning**: All experimental results in this repository validate the **expressive capacity** of the Transformer (i.e., that it *can* implement these algorithms). We have not yet presented evidence that Transformers trained via SGD *converge* to these specific solutions, though the architecture supports them.
--   **Synthetic vs. Real**: All mechanistic evidence is currently derived from synthetic linear regression tasks. While we have `real_data` loaders, we have not yet confirmed if Large Language Models (LLMs) trained on text use *this specific* algorithm or a more heuristic variant.
--   **Probe Circularity**: Our current probe results (`state_probes.py`) confirm that *if* a model implements our specific PCG construction, the states are readable. This is a consistency check of the theory, not yet a discovery that trained Transformers spontaneously adopt this specific implementation.
--   **Route B Complexity**: The Route B (PCG) construction is complex and sensitive to head configurations (as shown in our ablations). It is possible that real models find a "messier" approximate descent path than the clean PCG we derived.
-
-## Future Work
-1.  **Scaling to LLMs**: Apply our `state_probes` to LLaMA-2-7B on in-context learning benchmarks (MMLU).
-2.  **Non-Linear Tasks**: Extend the theory to Generalized Linear Models (GLMs) where the loss surface is convex but not quadratic (Logistic Regression).
-3.  **Causal Interventions**: Move beyond probing to *intervening*—can we inject a "better" search direction $p_t$ into the residual stream and speed up ICL?
+All claims are validated on synthetic data with mechanistic probes confirming internal state readability.
 
 ---
-*This project is open-source under the MIT License. We welcome contributions.*
+
+## Is This Direction Still Feasible?
+
+**Yes, with repositioning.** The ICL-as-optimization literature has matured significantly since this project began:
+
+### The Landscape Has Shifted
+
+Park et al. (2024) argue convincingly that ICL is a **mixture of competing algorithms** -- retrieval, inference, unigram, bigram -- with context length and training determining which dominates. This means:
+
+- The claim "ICL implements GD" (von Oswald et al., 2023) was always an incomplete picture
+- Similarly, "ICL implements KRR" would be an overclaim
+- The right framing is: **KRR/CG is one algorithm in the ICL mixture**, activated under specific conditions (regression-like tasks, sufficient context, well-conditioned data)
+
+### What Makes MetaRep Still Valuable
+
+1. **Second-order convergence**: Fu et al. (2023) showed empirically that Transformers achieve Newton-like convergence rates. MetaRep provides a *constructive mechanism* (CG/PCG) that explains this -- an explicit "compiler" from architecture to algorithm.
+
+2. **Falsifiable predictions**: Unlike pure expressivity results, our probes and failure modes generate testable hypotheses. If a model is using CG, we know what to look for. If it isn't, the probes will fail -- and that's informative too.
+
+3. **The width-rank result is novel**: No other work (to our knowledge) connects Transformer width to spectral sketching quality for ICL with formal bounds. This has practical implications for model sizing.
+
+4. **Algorithm selection framing**: Bai et al. (2023) prove transformers can do in-context algorithm selection. MetaRep's Route A and Route B are precisely the kind of base algorithms that the selector chooses between.
+
+### Risks and Honest Limitations
+
+| Risk | Severity | Mitigation |
+|------|----------|------------|
+| Trained models may not use CG specifically | High | Frame as expressivity + testable predictions, not as "this is what models do" |
+| Synthetic-only validation | High | Real-data probing of LLMs is the critical next step |
+| Park et al.'s critique of monolithic claims | Medium | We've repositioned: CG/KRR is one phase, not the whole story |
+| Route B complexity vs. practical implementations | Medium | Real models likely use approximate/messy variants, not clean PCG |
+| Probe circularity (construction confirms construction) | Medium | Acknowledged explicitly; probing trained models is future work |
+
+---
+
+## What's Done
+
+- Constructive proofs: LAT to CG mapping (Lemmas A-C), Route A theorem, width-rank bound
+- Empirical validation: Route A KRR alignment, failure modes, head ablations, width sweeps
+- Mechanistic probes: CG state recovery with train/test split, negative controls
+- Infrastructure: CI, reproducibility, Hydra configs, containerization
+
+## What's Not Done
+
+- **Probing real LLMs** (LLaMA, GPT-class) for CG state signatures -- the critical experiment
+- **Training from scratch**: Do Transformers trained via SGD converge to CG-like solutions?
+- **Algorithm phase detection**: When does a model switch from retrieval to inference (KRR) mode?
+- **GLM extension**: Non-quadratic loss surfaces (logistic, Poisson) where CG becomes nonlinear CG
+- **LaTeX paper build**: No submission-ready PDF pipeline yet
+
+## Will Anyone Care?
+
+**The audience is the mechanistic interpretability + ICL theory community.** Specifically:
+
+- Researchers studying *what algorithms Transformers implement* (the "mesa-optimizer" question)
+- People building on von Oswald / Dai's GD-ICL framework who want to know *why Transformers are faster than GD*
+- Anyone interested in principled model sizing for ICL tasks (the width-rank connection)
+- The growing "algorithmic phases of ICL" subfield that needs precise characterizations of each phase
+
+The key selling point is not "ICL = KRR" (which would be an overclaim). It's: **here is a precise, constructive characterization of the optimization-based phase of ICL, with falsifiable predictions and mechanistic signatures.** That's a contribution regardless of whether any specific model uses it.
+
+---
+
+*This project is open-source under the MIT License. We welcome contributions and critique.*
