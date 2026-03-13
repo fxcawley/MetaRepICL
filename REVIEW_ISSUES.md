@@ -9,25 +9,30 @@ Parsed from an OpenReview-style external review (March 2025). Issues are categor
 
 ## Critical Issues
 
-### W1: No experiments with actual transformers ~~[PARTIALLY FIXED]~~
-**Status**: PARTIALLY FIXED (first trained-model experiment completed; result does NOT support CG hypothesis)
+### W1: No experiments with actual transformers ~~[SUBSTANTIALLY ADDRESSED]~~
+**Status**: SUBSTANTIALLY ADDRESSED (two trained-model experiments completed with nuanced findings)
 **Severity**: Critical
 **Description**: Previously, not a single experiment involved a neural network trained via SGD.
 
-**Experiment completed** (`experiments/train_and_probe.py`):
-- Trained a 12-layer transformer (9.5M params, 256-dim, 4 heads) on ICL linear regression via SGD (50k steps, batch 64, ~21 min on RTX PRO 2000 Blackwell)
-- Model achieves MSE 0.013 (near noise floor sigma^2=0.01), confirming strong ICL performance
-- Probed per-layer activations for CG vs GD state variables using linear probes (500 test problems, 80/20 split)
+**Experiment 1: Isotropic training** (`experiments/train_and_probe.py`):
+- 12-layer transformer (9.5M params) trained on isotropic ICL regression (kappa~1), 50k steps, ~21 min
+- **Probe finding**: GD probe > CG probe (0.298 vs 0.184). Model is more GD-like when trained on well-conditioned data.
 
-**Key finding**: The trained model's internal states are **more aligned with GD than CG** (GD probe mean cosine sim = 0.298 vs CG = 0.184, both above random = 0.001). This is consistent with von Oswald et al. (2023). The CG hypothesis is not supported by this experiment.
+**Experiment 2: Mixed-kappa training** (`experiments/train_mixed_kappa.py`):
+- Same architecture trained on kappa in {1, 10, 50, 100, 500}, 50k steps, ~23 min
+- **Probe finding**: Neither CG nor GD probes recover state variables (both near 0.02). Model uses a different internal representation.
+- **Convergence finding (key result)**: The model's per-layer prediction error decays **dramatically faster than both CG and GD theory** at high kappa:
+  - kappa=100: Model 0.002, CG 0.012, GD 0.644
+  - kappa=500: Model 0.001, CG 0.140, GD 0.916
+  - The model converges 200x faster than CG and 1300x faster than GD at kappa=500
 
-**Caveat**: CG converges faster than GD, so CG state variables have less cross-problem variance at later layers, making them inherently harder to probe. Training on ill-conditioned data (where CG converges slowly) would provide a fairer comparison.
+**Summary**: The trained model does NOT implement textbook GD (ruled out by convergence rates at high kappa). It converges faster than textbook CG. Its internal representation doesn't map cleanly onto either CG or GD state variables. This suggests the model learns a qualitatively different, potentially preconditioned or accelerated optimization scheme.
 
-**Remaining work** (items 4-7 from original list):
-4. Train on mixed-kappa data and compare convergence rates against CG vs GD theory
-5. Head-drop ablation on trained models showing CG-specific degradation
-6. Test silent failure predictions on trained transformers
-7. (Stretch) Probe pre-trained LLMs (GPT-2, LLaMA) for CG state signatures during ICL
+**Remaining work**:
+- Head-drop ablation on trained models
+- Test silent failure predictions on trained transformers
+- Probe pre-trained LLMs (GPT-2, LLaMA) for CG/optimization signatures
+- Investigate what algorithm the model actually implements (PCG? Accelerated method?)
 
 ### W2: Proofs are sketches, not proofs
 **Status**: OPEN (future work)

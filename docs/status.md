@@ -53,6 +53,8 @@ Park et al. (2024) argue convincingly that ICL is a **mixture of competing algor
 - Probe demonstration: CG state recovery from constructed embeddings with train/test split and negative controls (validates construction, not trained models — see circularity caveat)
 - Silent failure analysis: Genuine numerical analysis of when the softmax-KRR gap degrades (strongest standalone contribution)
 - **Trained transformer experiment** (NEW): 12-layer transformer (9.5M params) trained on ICL linear regression via SGD. Probed for CG vs GD state variables. **Result: model is more GD-like than CG-like** (GD probe cos sim 0.298 vs CG 0.184). See [mechanistic report](experiments/mechanistic_report.md#5-probing-a-trained-transformer-new).
+- **Mixed-kappa training experiment** (NEW): Same architecture trained on tasks with kappa in {1, 10, 50, 100, 500}. **Key result: model converges 200x faster than CG and 1300x faster than GD at kappa=500**, but internal states don't match either CG or GD variables. The model learns a qualitatively different optimization scheme. See [mechanistic report](experiments/mechanistic_report.md#6-mixed-kappa-training-experiment-new).
+- **Silent failure analysis**: Self-contained writeup of softmax attention failure modes. See [silent failure](experiments/silent_failure.md) and [paper section](../paper/sections/silent_failure.md).
 - Infrastructure: CI, reproducibility, Hydra configs, containerization
 
 ## What's Not Done
