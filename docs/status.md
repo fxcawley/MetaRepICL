@@ -53,20 +53,20 @@ Park et al. (2024) argue convincingly that ICL is a **mixture of competing algor
 - Probe demonstration: CG state recovery from constructed embeddings with train/test split and negative controls (validates construction, not trained models — see circularity caveat)
 - Silent failure analysis: Genuine numerical analysis of when the softmax-KRR gap degrades (strongest standalone contribution)
 - **Trained transformer experiment** (NEW): 12-layer transformer (9.5M params) trained on ICL linear regression via SGD. Probed for CG vs GD state variables. **Result: model is more GD-like than CG-like** (GD probe cos sim 0.298 vs CG 0.184). See [mechanistic report](experiments/mechanistic_report.md#5-probing-a-trained-transformer-new).
-- **Mixed-kappa training experiment** (NEW, CORRECTED): Same architecture trained on tasks with kappa in {1, 10, 50, 100, 500}. Convergence analysis corrected to compare against actual CG/GD trajectories (not theoretical bounds with wrong condition number). **Result: Model >> GD at all kappas; Model is CG-competitive and slightly better at high kappa** (partly due to CG's numerical degradation at cond(K+lI)~10^5). GD probes still beat CG probes. See [mechanistic report](experiments/mechanistic_report.md#6-mixed-kappa-training-experiment-new).
+- **Mixed-kappa training experiment** (NEW, CORRECTED v2): Same architecture trained on tasks with kappa in {1, 10, 50, 100, 500}. Now compares against feature-space CG (the correct baseline) and measures errors against y_q. **Result: Feature-space CG > Model >> GD at all kappas.** The model is 2-5x worse than CG in the right space, but 3-1000x better than GD. GD probes still beat CG probes. See [mechanistic report](experiments/mechanistic_report.md#6-mixed-kappa-training-experiment-new).
 - **Silent failure analysis**: Self-contained writeup of softmax attention failure modes. See [silent failure](experiments/silent_failure.md) and [paper section](../paper/sections/silent_failure.md).
 - Infrastructure: CI, reproducibility, Hydra configs, containerization
 
 ## What's Not Done
 
 - **Probing real LLMs** (LLaMA, GPT-class) for CG state signatures
-- **Mixed-kappa training**: Train on tasks with varying condition numbers where CG and GD rates diverge, for a fairer CG vs GD comparison
 - **Algorithm phase detection**: When does a model switch from retrieval to inference (KRR) mode?
 - **GLM extension**: Non-quadratic loss surfaces (logistic, Poisson) where CG becomes nonlinear CG
 - **LaTeX paper build**: No submission-ready PDF pipeline yet
 - **Complete proof stubs**: Five formal items (S1-S5) remain unresolved — tight constants, formal preconditioner, multi-output, stability, causal masking
-- **Convergence rate comparison**: Show trained transformers match CG rate vs GD rate on ill-conditioned problems
 - **Route B centering**: Formal connection between LayerNorm and the centering assumption required by Route B
+- **Characterize the learned algorithm**: Compare trained model convergence against preconditioned CG, Chebyshev iteration, and spectral methods; test with nonlinear (MLP) probes and spectral probes
+- **Training distribution ablation**: At what kappa distribution does the model switch from GD-like to its faster algorithm?
 
 ## Will Anyone Care?
 

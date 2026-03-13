@@ -125,49 +125,47 @@ GD probes consistently outperform CG probes across all kappa levels. Both are lo
 
 ### Convergence Rate Analysis: The Key Finding
 
-**Correction note**: An earlier version of this analysis compared against theoretical CG/GD rate bounds using the input condition number $\kappa_{\text{input}}$, not the actual $\text{cond}(K + \lambda I)$. Since $K = XX^T$ has rank $p=10$ with $n=20$ rows, the actual condition number is 200-500$\times$ larger than $\kappa_{\text{input}}$. The corrected analysis below compares against **actual CG and GD trajectories** computed per-problem, not theoretical bounds.
+**Correction note**: An earlier version compared against theoretical CG/GD rate bounds using the wrong condition number, and only used data-space CG. The corrected analysis below compares against **actual CG/GD prediction trajectories** and includes **feature-space CG** — the correct baseline, since the transformer sees raw features X and can naturally operate in the p-dimensional feature space (via the Woodbury/push-through identity). All errors are now measured against ground-truth $y_q$, not the ridge oracle $f^*$, to avoid conflating convergence speed with lambda mismatch.
 
-| $\kappa_{\text{input}}$ | $\text{cond}(K{+}\lambda I)$ | Model (L12) | Actual CG | Actual GD | Verdict |
-|--------------------------|------------------------------|-------------|-----------|-----------|---------|
-| 1                        | 497                          | 0.069       | ~0.000    | 0.311     | CG converges exactly; Model $\gg$ GD |
-| 10                       | 2,731                        | 0.009       | 0.009     | 0.465     | Model $\approx$ CG $\gg$ GD |
-| 50                       | 11,897                       | 0.003       | 0.096     | 0.524     | Model $>$ CG $\gg$ GD |
-| 100                      | 23,012                       | 0.002       | 0.072     | 0.643     | Model $>$ CG $\gg$ GD |
-| 500                      | 108,902                      | 0.001       | 0.053     | 0.763     | Model $>$ CG $\gg$ GD |
+| $\kappa_{\text{input}}$ | $\text{cond}(X^TX{+}\lambda I)$ | Model | CG (feature) | CG (data) | GD | 
+|--------------------------|----------------------------------|-------|--------------|-----------|------|
+| 1                        | 20                               | 0.035 | **0.012**    | 0.012     | 0.121 |
+| 10                       | 50                               | 0.028 | **0.011**    | 0.027     | 0.979 |
+| 50                       | 180                              | 0.041 | **0.011**    | 0.798     | 4.250 |
+| 100                      | 315                              | 0.040 | **0.012**    | 1.099     | 9.813 |
+| 500                      | 1,446                            | 0.054 | **0.020**    | 3.796     | 54.17 |
 
-*(Values are normalized prediction MSE at layer/step 12, relative to GD step-1 error.)*
+*(MSE against ground-truth $y_q$ at layer/step 12.)*
 
 ![Convergence by Kappa](../../docs/figures/trained_mixed/convergence_by_kappa.png){ width=700 }
 
 **Key observations**:
 
-- **Model $\gg$ GD at all kappas**: The model's layer-12 error is 5-1200$\times$ smaller than GD's step-12 error. GD is definitively ruled out as the model's mechanism.
-- **Model $\approx$ CG at low kappa**: At $\kappa_{\text{input}} = 10$, the model (0.009) matches CG (0.009) almost exactly. Both dramatically outperform GD (0.465).
-- **Model $>$ CG at high kappa**: At $\kappa_{\text{input}} \geq 50$, the model outperforms CG by 15-80$\times$. This is partly because CG accumulates floating-point error at the very high actual condition numbers ($\text{cond}(K+\lambda I) \sim 10^4$-$10^5$), while the model maintains numerical stability. CG converges in $\leq \text{rank}(K)+1 = 11$ exact-arithmetic steps but degrades in float64 at high conditioning.
-- **At $\kappa_{\text{input}} = 1$**: CG converges to machine precision ($\sim 0$) while the model reaches 0.069 — the model is *slower* than ideal CG for well-conditioned problems.
+- **Feature-space CG is the correct baseline and it wins.** CG on $(X^TX + \lambda I)w = X^Ty$ — the p-dimensional system the transformer can naturally solve — converges to MSE ~ 0.01 at all kappas. This is 2-5$\times$ better than the model.
+- **The model's earlier apparent advantage over CG was an artifact** of comparing against data-space CG on the ill-conditioned $n \times n$ system $(XX^T + \lambda I)$, which has $\text{cond} \sim 10^5$ and suffers float64 numerical degradation. The properly-conditioned feature-space formulation eliminates this advantage.
+- **Model $\gg$ GD at all kappas**: The model is 3-1000$\times$ better than GD, with the gap growing with $\kappa$. GD is definitively ruled out.
+- **Model is 2-5$\times$ worse than feature-space CG**: The model does not match the Bayes-optimal predictor as closely as CG does. This gap is roughly constant across kappas, suggesting a fixed overhead rather than a convergence rate limitation.
 
 ### Interpretation
 
-1. **Model $\gg$ GD**: Definitively rules out gradient descent as a complete description of the model's optimization mechanism. Extends von Oswald et al. (2023) by showing the gap grows with conditioning.
+1. **Model $\gg$ GD**: Definitively confirmed across all kappas. The trained transformer uses something fundamentally faster than gradient descent. This extends von Oswald et al. (2023).
 
-2. **Model $\approx$ CG, with better numerical stability**: The model's convergence profile is CG-competitive at moderate conditioning and better at high conditioning, but this advantage is partly due to CG's numerical degradation rather than the model implementing a fundamentally faster algorithm. The model appears to have learned an optimization scheme with implicit numerical regularization.
+2. **Model $<$ CG (feature-space)**: When CG operates in the correct space (the p-dimensional feature space, not the n-dimensional data space), it outperforms the model by 2-5$\times$ at all kappas. The model has learned an effective optimization scheme, but it does not quite match the efficiency of CG in the correct parameterization.
 
-3. **Model $<$ ideal CG for well-conditioned problems**: When CG converges exactly ($\kappa_{\text{input}} = 1$), the model doesn't reach the same precision. This is expected: a 12-layer transformer with finite width implementing approximate optimization steps cannot match exact CG in exact arithmetic.
+3. **The space matters more than the algorithm**: The earlier apparent advantage of the model over CG was entirely explained by the model operating in a better-conditioned space (feature space, cond ~ $\kappa_{\text{input}}$) vs CG operating in the wrong space (data space, cond ~ $200\kappa_{\text{input}}$). This is a key methodological lesson: always compare against the correctly-parameterized baseline.
 
-4. **GD probes still win over CG probes**: Despite CG-competitive *behavioral* convergence, the internal states are more GD-like than CG-like. This suggests the model achieves fast convergence through a mechanism that more closely resembles an accelerated/preconditioned gradient method than textbook CG.
+4. **GD probes still beat CG probes**: Despite better-than-GD convergence, internal states remain more GD-like than CG-like. The model achieves fast convergence through a GD-like mechanism in a well-conditioned space, rather than by implementing CG.
 
 ### Caveats
 
-- Per-layer readout heads were trained on the mixed-kappa distribution and may learn non-trivial mappings
-- CG's degradation at high conditioning inflates the model's apparent advantage; with higher-precision arithmetic CG would perform better
-- The model has 9.5M parameters for 20-dimensional problems — high capacity may enable task-specific shortcuts
-- 500 problems per kappa with 256-dim activations and 20-dim targets: probe is somewhat underdetermined (400 training samples)
+- Per-layer readout heads are trained on $y_q$ but this is the correct target (same as model training loss)
+- The model's 2-5$\times$ gap from CG(feature) may reflect the readout head's limited capacity (linear from d_model) or an implicit regularization mismatch
+- Bayes-optimal $\lambda$ for this data setup ($w \sim N(0, I/p)$, $\sigma = 0.1$) is $\lambda^* = p\sigma^2 = 0.1$, matching the probe\_lam=0.1 used, so the lambda mismatch concern is addressed
 
 ### Future Work
 
 - Compare against preconditioned CG with optimal (Jacobi) preconditioner
-- Compare against Chebyshev iteration tuned to each task's spectral range
-- Test with MLP probes (nonlinear) to see if CG/GD states are encoded nonlinearly
-- Probe for spectral quantities (eigenvalues, eigenbasis projections) instead of CG/GD state variables
-- Training distribution ablation: at what kappa distribution does the model switch from GD-like to its faster algorithm?
+- Test with nonlinear (MLP) probes for CG/GD state recovery
+- Probe for spectral quantities (eigenvalues, eigenbasis projections) 
+- Training distribution ablation: at what kappa distribution does behavior change?
 - Test pre-trained LLMs (GPT-2, LLaMA) for optimization structure during ICL

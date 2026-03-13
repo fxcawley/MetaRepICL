@@ -21,13 +21,13 @@ Parsed from an OpenReview-style external review (March 2025). Issues are categor
 **Experiment 2: Mixed-kappa training** (`experiments/train_mixed_kappa.py`):
 - Same architecture trained on kappa in {1, 10, 50, 100, 500}, 50k steps, ~23 min
 - **Probe finding**: GD probes consistently outperform CG probes (GD 0.06-0.14 vs CG 0.03-0.09). Both low but GD consistently higher.
-- **Convergence finding (CORRECTED)**: Comparison against **actual CG/GD trajectories** (not theoretical bounds — an earlier version used the wrong condition number). Results:
-  - kappa_input=10 (cond=2731): Model 0.009, CG 0.009, GD 0.465 -- **Model matches CG, both >> GD**
-  - kappa_input=100 (cond=23012): Model 0.002, CG 0.072, GD 0.643 -- **Model > CG >> GD**
-  - kappa_input=500 (cond=109000): Model 0.001, CG 0.053, GD 0.763 -- **Model > CG >> GD**
-  - CG's underperformance at high kappa is partly due to float64 numerical degradation (CG converges in rank(K)+1=11 exact-arithmetic steps but accumulates error at cond~10^5)
+- **Convergence finding (CORRECTED v2)**: Now compares against **feature-space CG** (the correct baseline since the transformer sees raw X) and measures all errors against y_q (not f_oracle). Results (MSE at layer/step 12):
+  - kappa=1: Model 0.035, CG(feat) 0.012, GD 0.121
+  - kappa=100: Model 0.040, CG(feat) 0.012, GD 9.813
+  - kappa=500: Model 0.054, CG(feat) 0.020, GD 54.2
+  - Feature-space CG beats the model by 2-5x at all kappas. The earlier "model > CG" claim was an artifact of comparing against data-space CG on an ill-conditioned n x n system.
 
-**Summary (corrected)**: Model >> GD at all kappas (definitive). Model is CG-competitive at moderate kappa and outperforms CG at high kappa, but the advantage is partly due to CG's numerical instability rather than the model implementing a fundamentally faster algorithm. The model appears to learn an optimization scheme with implicit numerical regularization — better than GD, CG-competitive, with better numerical stability.
+**Summary (final corrected)**: Feature-space CG > Model >> GD at all kappas. The model learns something much faster than GD but 2-5x worse than the correctly-parameterized CG baseline. The model's internal states are more GD-like than CG-like (probes). Framing: "better than GD, but CG in the right space still wins."
 
 **Remaining work**:
 - Head-drop ablation on trained models

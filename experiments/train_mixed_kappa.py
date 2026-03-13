@@ -65,7 +65,8 @@ def generate_mixed_kappa_batch(batch_size, n_support, p, kappas, noise=0.1, devi
 # CG / GD reference trajectories
 # ---------------------------------------------------------------------------
 
-def cg_trajectory(K, y, lam, steps):
+def cg_data_space(K, y, lam, steps):
+    """CG on (K + lam*I) alpha = y in DATA SPACE (n x n system)."""
     n = K.shape[0]
     A = K + lam * np.eye(n)
     alpha = np.zeros(n)
@@ -81,6 +82,36 @@ def cg_trajectory(K, y, lam, steps):
         beta = (r @ r) / (rr + 1e-30)
         p = r + beta * p
         traj.append(alpha.copy())
+    return traj
+
+
+def cg_feature_space(X, y, lam, steps):
+    """CG on (X^T X + lam*I) w = X^T y in FEATURE SPACE (p x p system).
+
+    This is the correct baseline: the transformer sees raw features X,
+    so it naturally operates in the p-dimensional feature space.
+    Via the push-through identity, x_q^T w gives the same prediction as
+    the data-space ridge solution, but CG on the p x p system converges
+    in at most p steps with cond(X^T X + lam*I) ~ kappa_input, vastly
+    better conditioned than cond(XX^T + lam*I) when n > p.
+    Returns w trajectory (list of p-dim vectors).
+    """
+    p_dim = X.shape[1]
+    B = X.T @ X + lam * np.eye(p_dim)
+    rhs = X.T @ y
+    w = np.zeros(p_dim)
+    r = rhs.copy()
+    d = r.copy()
+    traj = [w.copy()]
+    for _ in range(steps):
+        Bd = B @ d
+        rr = r @ r
+        gamma = rr / (d @ Bd + 1e-30)
+        w = w + gamma * d
+        r = r - gamma * Bd
+        beta = (r @ r) / (rr + 1e-30)
+        d = r + beta * d
+        traj.append(w.copy())
     return traj
 
 
@@ -183,9 +214,12 @@ def fit_probe(X_train, y_train, X_test, y_test, lam_reg=1e-3):
 def run_stratified_analysis(model, readouts, cfg, device, n_per_kappa=200):
     """Probe and measure convergence, stratified by kappa.
 
-    CORRECTED: Convergence comparison uses actual CG/GD prediction errors
-    at each step, not theoretical rate bounds (which used the wrong kappa --
-    the feature covariance condition number, not cond(K+lambda*I)).
+    CORRECTED v2:
+    - Compares against actual CG/GD trajectories, not theoretical bounds.
+    - Adds FEATURE-SPACE CG: CG on (X^T X + lam*I) which is the correct
+      baseline since the transformer sees raw X (p x p, well-conditioned).
+    - All errors measured against y_q (ground truth), not f_oracle, to avoid
+      conflating convergence speed with oracle lambda mismatch.
     """
     model.eval()
     num_layers = model.num_layers
@@ -196,14 +230,15 @@ def run_stratified_analysis(model, readouts, cfg, device, n_per_kappa=200):
     results = {}
     for kappa in KAPPAS:
         print(f"  Analyzing kappa={kappa:.0f}...")
-        # Collect data for this kappa
         all_acts = {l: [] for l in range(num_layers + 1)}
         all_cg = {l: [] for l in range(1, num_layers + 1)}
         all_gd = {l: [] for l in range(1, num_layers + 1)}
         per_layer_model_errors = [[] for _ in range(num_layers)]
-        per_layer_cg_errors = [[] for _ in range(num_layers)]
+        per_layer_cg_data_errors = [[] for _ in range(num_layers)]
+        per_layer_cg_feat_errors = [[] for _ in range(num_layers)]
         per_layer_gd_errors = [[] for _ in range(num_layers)]
-        actual_kappa_Ks = []
+        actual_kappa_data = []  # cond(K + lam*I) = cond(XX^T + lam*I)
+        actual_kappa_feat = []  # cond(X^T X + lam*I)
 
         bs = 50
         for start in range(0, n_per_kappa, bs):
@@ -220,47 +255,58 @@ def run_stratified_analysis(model, readouts, cfg, device, n_per_kappa=200):
             x_s_np = x_s.cpu().numpy()
             y_s_np = y_s.cpu().numpy()
             x_q_np = x_q.squeeze(1).cpu().numpy()
+            y_q_np = y_q.cpu().numpy()
 
             for i in range(cur_bs):
-                K = x_s_np[i] @ x_s_np[i].T
+                X_i = x_s_np[i]
                 y_vec = y_s_np[i]
-                A = K + lam * np.eye(n_support)
-                try:
-                    alpha_star = np.linalg.solve(A, y_vec)
-                except np.linalg.LinAlgError:
-                    continue
-                k_q = x_s_np[i] @ x_q_np[i]
-                f_oracle = float(k_q @ alpha_star)
+                xq_i = x_q_np[i]
+                yq_i = y_q_np[i]
+                K = X_i @ X_i.T
 
-                # Track actual cond(K + lambda I) for diagnostics
-                eigs = np.linalg.eigvalsh(A)
-                actual_kappa_Ks.append(float(eigs[-1] / max(eigs[0], 1e-30)))
+                # Track condition numbers of both formulations
+                A_data = K + lam * np.eye(n_support)
+                eigs_data = np.linalg.eigvalsh(A_data)
+                actual_kappa_data.append(float(eigs_data[-1] / max(eigs_data[0], 1e-30)))
 
-                # Compute actual CG and GD prediction errors at each step
-                cg_traj = cg_trajectory(K, y_vec, lam, num_layers)
+                B_feat = X_i.T @ X_i + lam * np.eye(p_dim)
+                eigs_feat = np.linalg.eigvalsh(B_feat)
+                actual_kappa_feat.append(float(eigs_feat[-1] / max(eigs_feat[0], 1e-30)))
+
+                # Data-space CG trajectory -> predictions
+                cg_d_traj = cg_data_space(K, y_vec, lam, num_layers)
+                # Feature-space CG trajectory -> predictions
+                cg_f_traj = cg_feature_space(X_i, y_vec, lam, num_layers)
+                # GD trajectory -> predictions
                 gd_traj = gd_trajectory(K, y_vec, lam, num_layers)
+
                 for l in range(1, num_layers + 1):
-                    all_cg[l].append(cg_traj[l])
+                    all_cg[l].append(cg_d_traj[l])
                     all_gd[l].append(gd_traj[l])
 
                 for l in range(num_layers):
-                    # Model prediction error at layer l
+                    # All errors measured against y_q (ground truth)
                     h_l = intermediates[l + 1][i:i+1]
                     with torch.no_grad():
                         pred_l = readouts[l](h_l).item()
-                    per_layer_model_errors[l].append((pred_l - f_oracle) ** 2)
+                    per_layer_model_errors[l].append((pred_l - yq_i) ** 2)
 
-                    # CG prediction error at step l+1
-                    alpha_cg_l = cg_traj[l + 1]
-                    f_cg_l = float(k_q @ alpha_cg_l)
-                    per_layer_cg_errors[l].append((f_cg_l - f_oracle) ** 2)
+                    # CG data-space prediction
+                    alpha_cg = cg_d_traj[l + 1]
+                    f_cg_d = float((X_i @ xq_i) @ alpha_cg)
+                    per_layer_cg_data_errors[l].append((f_cg_d - yq_i) ** 2)
 
-                    # GD prediction error at step l+1
-                    alpha_gd_l = gd_traj[l + 1]
-                    f_gd_l = float(k_q @ alpha_gd_l)
-                    per_layer_gd_errors[l].append((f_gd_l - f_oracle) ** 2)
+                    # CG feature-space prediction
+                    w_cg = cg_f_traj[l + 1]
+                    f_cg_f = float(xq_i @ w_cg)
+                    per_layer_cg_feat_errors[l].append((f_cg_f - yq_i) ** 2)
 
-        # Stack arrays
+                    # GD prediction
+                    alpha_gd = gd_traj[l + 1]
+                    f_gd = float((X_i @ xq_i) @ alpha_gd)
+                    per_layer_gd_errors[l].append((f_gd - yq_i) ** 2)
+
+        # Stack probe arrays
         for l in range(num_layers + 1):
             all_acts[l] = np.concatenate(all_acts[l], axis=0)
         for l in range(1, num_layers + 1):
@@ -283,29 +329,22 @@ def run_stratified_analysis(model, readouts, cfg, device, n_per_kappa=200):
             gd_sims.append(fit_probe(X_tr, gd_tr, X_te, gd_te))
             ctrl_sims.append(fit_probe(X_tr, ctrl_tr, X_te, ctrl_te))
 
-        # Convergence: actual CG/GD prediction errors (not theoretical bounds)
-        model_errs = [np.mean(e) if e else float('nan') for e in per_layer_model_errors]
-        cg_errs = [np.mean(e) if e else float('nan') for e in per_layer_cg_errors]
-        gd_errs = [np.mean(e) if e else float('nan') for e in per_layer_gd_errors]
-        # Normalize all by GD step-1 error for a common baseline
-        baseline = gd_errs[0] if gd_errs[0] > 1e-12 else 1.0
-        model_norm = [e / baseline for e in model_errs]
-        cg_norm = [e / baseline for e in cg_errs]
-        gd_norm = [e / baseline for e in gd_errs]
-
-        mean_actual_kappa = float(np.mean(actual_kappa_Ks)) if actual_kappa_Ks else float('nan')
+        # Convergence: MSE against y_q for all methods
+        model_mse = [float(np.mean(e)) for e in per_layer_model_errors]
+        cg_d_mse = [float(np.mean(e)) for e in per_layer_cg_data_errors]
+        cg_f_mse = [float(np.mean(e)) for e in per_layer_cg_feat_errors]
+        gd_mse = [float(np.mean(e)) for e in per_layer_gd_errors]
 
         results[kappa] = {
             'cg_sims': cg_sims, 'gd_sims': gd_sims, 'ctrl_sims': ctrl_sims,
             'cg_mean': float(np.mean(cg_sims)),
             'gd_mean': float(np.mean(gd_sims)),
-            'model_norm': model_norm,
-            'cg_norm': cg_norm,
-            'gd_norm': gd_norm,
-            'model_raw': model_errs,
-            'cg_raw': cg_errs,
-            'gd_raw': gd_errs,
-            'actual_kappa_K': mean_actual_kappa,
+            'model_mse': model_mse,
+            'cg_data_mse': cg_d_mse,
+            'cg_feat_mse': cg_f_mse,
+            'gd_mse': gd_mse,
+            'actual_kappa_data': float(np.mean(actual_kappa_data)),
+            'actual_kappa_feat': float(np.mean(actual_kappa_feat)),
         }
 
     return results
@@ -345,23 +384,24 @@ def plot_stratified_probes(results, out_dir):
 
 
 def plot_stratified_convergence(results, out_dir):
-    """Plot per-layer convergence: model vs actual CG vs actual GD."""
+    """Plot per-layer convergence: model vs CG(data) vs CG(feature) vs GD."""
     kappas = sorted(results.keys())
     fig, axes = plt.subplots(1, len(kappas), figsize=(4*len(kappas), 4), squeeze=False)
     for i, kappa in enumerate(kappas):
         ax = axes[0, i]
         d = results[kappa]
-        layers = list(range(1, len(d['model_norm']) + 1))
-        ax.semilogy(layers, d['model_norm'], '-o', color='blue',
-                     markersize=4, label='Model')
-        ax.semilogy(layers, d['cg_norm'], '--', color='green', lw=1.5, label='Actual CG')
-        ax.semilogy(layers, d['gd_norm'], ':', color='red', lw=1.5, label='Actual GD')
-        ax.set_xlabel('Layer / Step'); ax.set_ylabel('Norm. Pred. Error')
-        actual_k = d.get('actual_kappa_K', kappa)
-        ax.set_title(f'kappa_input={kappa:.0f}\ncond(K+lI)={actual_k:.0f}')
-        ax.legend(fontsize=7); ax.grid(True, alpha=0.3)
-        ax.set_ylim(bottom=1e-10)
-    plt.suptitle('Per-Layer Convergence: Model vs Actual CG/GD Trajectories', y=1.02, fontsize=12)
+        layers = list(range(1, len(d['model_mse']) + 1))
+        ax.semilogy(layers, d['model_mse'], '-o', color='blue', markersize=4, label='Model')
+        ax.semilogy(layers, d['cg_feat_mse'], '-s', color='darkgreen', markersize=4, label='CG (feature)')
+        ax.semilogy(layers, d['cg_data_mse'], '--', color='lightgreen', lw=1.5, label='CG (data)')
+        ax.semilogy(layers, d['gd_mse'], ':', color='red', lw=1.5, label='GD')
+        ax.set_xlabel('Layer / Step'); ax.set_ylabel('MSE vs y_q')
+        kd = d.get('actual_kappa_data', kappa)
+        kf = d.get('actual_kappa_feat', kappa)
+        ax.set_title(f'kappa_in={kappa:.0f}\ncond_data={kd:.0f} cond_feat={kf:.0f}', fontsize=8)
+        ax.legend(fontsize=6); ax.grid(True, alpha=0.3)
+    plt.suptitle('Convergence: Model vs CG (feature & data space) vs GD\n'
+                 '(all errors measured against ground truth y_q)', y=1.05, fontsize=11)
     plt.tight_layout()
     plt.savefig(f'{out_dir}/convergence_by_kappa.png', dpi=150, bbox_inches='tight'); plt.close()
 
@@ -467,24 +507,18 @@ def main():
                  "GD" if d['gd_mean'] > d['cg_mean'] + 0.02 else "tie"
         print(f"  {kappa:6.0f} | {d['cg_mean']:7.3f} | {d['gd_mean']:7.3f} | {winner:>6}")
 
-    print(f"\n  Convergence (normalized pred error at layer 12):")
-    print(f"  {'kappa':>6} | {'cond(K+lI)':>10} | {'Model':>8} | {'CG':>8} | {'GD':>8} | Verdict")
-    print("  " + "-" * 65)
+    print(f"\n  Convergence (MSE against y_q at layer 12):")
+    print(f"  {'kappa':>6} | {'cond_data':>9} | {'cond_feat':>9} | {'Model':>8} | {'CG feat':>8} | {'CG data':>8} | {'GD':>8}")
+    print("  " + "-" * 75)
     for kappa in sorted(results.keys()):
         d = results[kappa]
-        m = d['model_norm'][-1]
-        c = d['cg_norm'][-1]
-        g = d['gd_norm'][-1]
-        ak = d.get('actual_kappa_K', kappa)
-        if m < c * 0.5 and m < g * 0.5:
-            v = "Model > CG > GD"
-        elif m < g * 0.5:
-            v = "Model ~ CG >> GD"
-        elif m > g:
-            v = "Model > GD"
-        else:
-            v = "comparable"
-        print(f"  {kappa:6.0f} | {ak:10.0f} | {m:8.4f} | {c:8.4f} | {g:8.4f} | {v}")
+        m = d['model_mse'][-1]
+        cf = d['cg_feat_mse'][-1]
+        cd = d['cg_data_mse'][-1]
+        g = d['gd_mse'][-1]
+        kd = d.get('actual_kappa_data', kappa)
+        kf = d.get('actual_kappa_feat', kappa)
+        print(f"  {kappa:6.0f} | {kd:9.0f} | {kf:9.0f} | {m:8.4f} | {cf:8.4f} | {cd:8.4f} | {g:8.4f}")
 
     # ---- Phase 4: Plots ----
     plot_stratified_probes(results, args.out_dir)
@@ -502,10 +536,12 @@ def main():
         save_results[f'kappa_{kappa:.0f}'] = {
             'cg_sims': d['cg_sims'], 'gd_sims': d['gd_sims'],
             'cg_mean': d['cg_mean'], 'gd_mean': d['gd_mean'],
-            'model_norm': d['model_norm'],
-            'cg_norm': d['cg_norm'],
-            'gd_norm': d['gd_norm'],
-            'actual_kappa_K': d['actual_kappa_K'],
+            'model_mse': d['model_mse'],
+            'cg_data_mse': d['cg_data_mse'],
+            'cg_feat_mse': d['cg_feat_mse'],
+            'gd_mse': d['gd_mse'],
+            'actual_kappa_data': d['actual_kappa_data'],
+            'actual_kappa_feat': d['actual_kappa_feat'],
         }
     with open(f'{args.out_dir}/results_mixed.json', 'w') as f:
         json.dump(save_results, f, indent=2)
@@ -529,10 +565,15 @@ def main():
     # Convergence verdict
     for kappa in sorted(results.keys()):
         d = results[kappa]
-        m, c, g = d['model_norm'][-1], d['cg_norm'][-1], d['gd_norm'][-1]
-        if m < g * 0.5:
+        m = d['model_mse'][-1]
+        cf = d['cg_feat_mse'][-1]
+        g = d['gd_mse'][-1]
+        if m > cf * 1.1:
+            print(f"  CONVERGENCE (kappa={kappa:.0f}): CG(feat) > Model "
+                  f"(CG_feat={cf:.4f}, model={m:.4f}, GD={g:.4f})")
+        elif m < g * 0.5:
             print(f"  CONVERGENCE (kappa={kappa:.0f}): Model >> GD "
-                  f"(model={m:.4f}, CG={c:.4f}, GD={g:.4f})")
+                  f"(model={m:.4f}, CG_feat={cf:.4f}, GD={g:.4f})")
 
 
 if __name__ == '__main__':
