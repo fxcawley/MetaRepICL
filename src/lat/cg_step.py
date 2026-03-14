@@ -7,11 +7,11 @@ def cg_step(
 	r: np.ndarray,
 	p: np.ndarray,
 	Ap: np.ndarray,
-	lam: float,
 	prev_rr: float | None = None,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, float]:
 	"""Perform one CG step for (K + lam I) alpha = y.
-	Inputs are float64 vectors per support token. Ap should be (K p) + lam p.
+	Inputs are float64 vectors per support token. Ap should be (K + lam I) p,
+	i.e., the caller is responsible for computing the regularized matvec.
 	If prev_rr is None, compute from r.
 	Returns (alpha_next, r_next, p_next, rr_next).
 	"""

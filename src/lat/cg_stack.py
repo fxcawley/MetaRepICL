@@ -22,7 +22,7 @@ def run_cg(
 	for _ in range(int(t)):
 		Kp = attention_matvec(phi, phi, p)
 		Ap = Kp + lam * p
-		alpha, r, p, _ = cg_step(alpha, r, p, Ap, lam)
+		alpha, r, p, _ = cg_step(alpha, r, p, Ap)
 	return alpha, r, p
 
 
@@ -43,6 +43,6 @@ def run_cg_with_history(
 	for _ in range(int(t)):
 		Kp = attention_matvec(phi, phi, p)
 		Ap = Kp + lam * p
-		alpha, r, p, _ = cg_step(alpha, r, p, Ap, lam)
+		alpha, r, p, _ = cg_step(alpha, r, p, Ap)
 		hist.append((alpha.copy(), r.copy(), p.copy()))
 	return hist

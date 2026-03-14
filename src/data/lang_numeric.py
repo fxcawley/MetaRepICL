@@ -114,12 +114,13 @@ def load_dataset_from_csv(
     with open(csv_path, 'r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
         for row in reader:
-            docs.append(row['text'])
             try:
-                labels.append(float(row['label']))
+                label = float(row['label'])
             except ValueError:
-                # Fallback for non-numeric labels? Or just skip?
+                # Skip rows with non-numeric labels
                 continue
+            docs.append(row['text'])
+            labels.append(label)
                 
     # Shuffle
     indices = np.arange(len(docs))

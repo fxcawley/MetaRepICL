@@ -53,7 +53,7 @@ def run_width_rank(
 	for m in ms:
 		Khat = sketch_kernel(phi, m=m, seed=seed + m)
 		errs.append(pred_err(Khat))
-		deffs.append(effective_dimension(K, lam))
+		deffs.append(effective_dimension(Khat, lam))
 	return {"m": ms, "pred_err": errs, "d_eff": deffs}
 
 

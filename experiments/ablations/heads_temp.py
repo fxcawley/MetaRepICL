@@ -188,7 +188,7 @@ def run_shared_vs_dedicated_heads(seed=123, n=32, p=8, lam=1e-2, t_steps=5):
         phi_noisy = phi + noise_scale * rng.standard_normal(phi.shape)
         Kp = attention_matvec(phi_noisy, phi_noisy, p_ded)
         Ap = Kp + lam * p_ded
-        alpha_ded, r_ded, p_ded, _ = cg_step(alpha_ded, r_ded, p_ded, Ap, lam)
+        alpha_ded, r_ded, p_ded, _ = cg_step(alpha_ded, r_ded, p_ded, Ap)
     
     err_dedicated = float(np.linalg.norm(alpha_ded - alpha_star))
     
@@ -224,7 +224,7 @@ def main(cfg: DictConfig):
     print(json.dumps(res_sd))
     
     # Plotting
-    if args.plot or True: # Always plot for now
+    if args.plot:
         os.makedirs("docs/figures/ablations", exist_ok=True)
         
         # Plot B

@@ -27,7 +27,7 @@ def test_cg_step_matches_reference():
 	p = r.copy()
 	Ap = K @ p + lam * p
 	alpha_ref, r_ref, p_ref = reference_cg_step(alpha, r, p, K, lam)
-	alpha_out, r_out, p_out, rr_next = cg_step(alpha, r, p, Ap, lam)
+	alpha_out, r_out, p_out, rr_next = cg_step(alpha, r, p, Ap)
 	assert np.allclose(alpha_out, alpha_ref, rtol=1e-12, atol=1e-12)
 	assert np.allclose(r_out, r_ref, rtol=1e-12, atol=1e-12)
 	assert np.allclose(p_out, p_ref, rtol=1e-12, atol=1e-12)
