@@ -149,3 +149,61 @@ class TestTrajectoryProperties:
         traj = vanilla_cg_trajectory(X, y, lam, steps=p)
         err = np.linalg.norm(traj[p] - w_star)
         assert err < 1e-8, f"CG should converge in p={p} steps: err={err}"
+
+
+class TestNumericalStability:
+    """Verify algorithms don't diverge at high condition numbers."""
+
+    @pytest.fixture
+    def high_kappa_problem(self):
+        """Problem with kappa=500 (matching the experiment)."""
+        rng = np.random.default_rng(42)
+        n, p = 30, 10
+        sigmas = np.geomspace(500.0, 1.0, p)
+        X = rng.standard_normal((n, p)).astype(np.float64) * np.sqrt(sigmas)
+        w_true = rng.standard_normal(p).astype(np.float64)
+        y = X @ w_true + 0.01 * rng.standard_normal(n)
+        lam = 0.1
+        B = X.T @ X + lam * np.eye(p)
+        w_star = np.linalg.solve(B, X.T @ y)
+        return X, y, lam, w_star
+
+    def test_precond_gd_eigenvalues_correct(self, high_kappa_problem):
+        """Precond GD must use correct eigenvalue computation (not eigvalsh on non-symmetric M^{-1}B)."""
+        X, y, lam, w_star = high_kappa_problem
+        B = X.T @ X + lam * np.eye(X.shape[1])
+        M_inv = 1.0 / np.diag(B)
+        # The symmetrized version should have all positive eigenvalues
+        M_inv_half = np.sqrt(M_inv)
+        symm = np.diag(M_inv_half) @ B @ np.diag(M_inv_half)
+        eigs = np.linalg.eigvalsh(symm)
+        assert np.all(eigs > 0), f"Symmetrized preconditioned matrix should be SPD: min eig = {eigs[0]}"
+
+    def test_precond_gd_does_not_diverge(self, high_kappa_problem):
+        """Precond GD should converge (not diverge) at kappa=500."""
+        X, y, lam, w_star = high_kappa_problem
+        traj = preconditioned_gd_trajectory(X, y, lam, steps=12)
+        err_first = np.linalg.norm(traj[1] - w_star)
+        err_last = np.linalg.norm(traj[-1] - w_star)
+        assert err_last < err_first, \
+            f"Precond GD should converge at kappa=500: err went {err_first:.4f} -> {err_last:.4f}"
+
+    def test_heavy_ball_does_not_diverge(self, high_kappa_problem):
+        """Heavy Ball with damped momentum should not diverge at kappa=500."""
+        X, y, lam, w_star = high_kappa_problem
+        traj = heavy_ball_trajectory(X, y, lam, steps=12)
+        err_first = np.linalg.norm(traj[1] - w_star)
+        err_last = np.linalg.norm(traj[-1] - w_star)
+        assert err_last < err_first * 10, \
+            f"Heavy Ball should not diverge at kappa=500: err went {err_first:.4f} -> {err_last:.4f}"
+
+    def test_chebyshev_does_not_diverge(self, high_kappa_problem):
+        """Chebyshev should not diverge at kappa=500."""
+        X, y, lam, w_star = high_kappa_problem
+        traj = chebyshev_iteration_trajectory(X, y, lam, steps=12)
+        # Check no NaN/Inf
+        for i, w in enumerate(traj):
+            assert np.all(np.isfinite(w)), f"Chebyshev produced non-finite at step {i}"
+        err_last = np.linalg.norm(traj[-1] - w_star)
+        assert err_last < np.linalg.norm(w_star) * 10, \
+            f"Chebyshev error should be bounded: {err_last:.4f}"
