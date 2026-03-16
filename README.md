@@ -1,57 +1,74 @@
-# MetaRep — In-Context Learning as Meta-Representation Alignment
+# MetaRep -- Algorithm Identification in In-Context Learning
 
-This repository tracks the MetaRep project: formalizing and validating the hypothesis that transformer ICL implements kernel ridge regression (KRR) on learned hidden representations, including constructive LAT→CG mappings and softmax Route-A/B.
+How precisely can we identify the optimization algorithm implemented by in-context learning? We train transformers on ICL regression tasks and systematically compare their behavior against six named iterative algorithms with bootstrap confidence intervals.
 
-See `PROJECT_PLAN.md` for epics and tickets. Issues are pre-seeded from that plan; filter by labels P0/P1 and milestones M1–M6.
+**Main findings** (see `paper/workshop_paper.md`):
+
+1. **Model >> GD**: Trained transformers converge dramatically faster than gradient descent (R^2 gap = 0.20), confirming second-order optimization.
+2. **CG-class confirmed**: Per-problem predictions correlate strongly (R^2 = 0.92) with conjugate gradients, preconditioned CG, and preconditioned GD.
+3. **Specific algorithm not identifiable**: CG, Precond CG, and Precond GD are statistically indistinguishable (gap 0.004, CI 0.017). This challenges the specificity of prior claims.
+4. **Probe-convergence tension**: Internal representations are more GD-like than CG-like despite CG-like convergence -- a disconnect unreported in prior work.
+5. **Silent failure modes**: Softmax attention as a kernel regressor fails silently in high-dimensional and ill-conditioned regimes (RMSE looks fine, rank ordering destroyed).
 
 ## Quickstart
 
-- Environment
-  - Python 3.10+
-  - Optional: Docker (CUDA base) with lockfiles
-- Setup
-  - `conda create -n metarep python=3.10 -y && conda activate metarep`
-  - `pip install -r requirements.txt`
+```bash
+pip install -r requirements.txt
+
+# Run algorithm identification on pretrained model:
+python experiments/algorithm_id.py --load docs/figures/trained_mixed/model_mixed.pt
+
+# Train a new model and run analysis:
+python experiments/algorithm_id.py --steps 30000 --p 20 --n-support 40 --num-layers 24
+
+# Run silent failure analysis:
+python experiments/silent_failure.py
+
+# Run all tests:
+python -m pytest tests/ -v
+```
 
 ## Repo layout
 
-- `src/lat/` linear-attention CG blocks (LAT→CG)
+- `paper/workshop_paper.md` the main paper (workshop format)
+- `experiments/algorithm_id.py` algorithm identification experiment (6 algorithms, CIs, stratified)
+- `experiments/train_and_probe.py` train ICL transformer, probe for CG/GD states
+- `experiments/train_mixed_kappa.py` mixed-kappa training with feature-space CG
+- `experiments/silent_failure.py` softmax-as-kernel failure mode analysis
+- `src/models/` ICL transformer architecture
+- `src/lat/` CG implementation (steps, stacking, preconditioning)
 - `src/data/` synthetic and GLM data generators
-- `experiments/` runnable scripts for Route A/B, width–rank, probes
-- `configs/` Hydra configs
-- `tests/` unit tests (float64 baselines; float32 parity)
-- `docs/` proofs, masking, compute budgets, anonymity checklist
-- `.github/workflows/` CI and packaging checks
+- `tests/` 43 tests covering algorithms, convergence, stability
+- `docs/figures/` experimental results and plots
+- `configs/` Hydra configs for experiment sweeps
 
-## How to run (MVP targets)
+## Key results
 
-- Baselines (ridge oracle vs GD-ICL; prints mean±CI over seeds):
-  - `make baselines`
-- Width–rank (rank-m sketch via random projection; saves a plot to `figures/width_rank.png`):
-  - `make width_rank`
-- Softmax Route A minimal (exp-kernel KRR vs attention-induced kernel diagnostics):
-  - `make route_a` or `python experiments/route_a_minimal.py --plot`
-- Route A end-to-end (single query prediction):
-  - `python experiments/route_a_end2end.py`
-- Preconditioner ablation (diagonal P):
-  - `python experiments/precond.py`
-- Knob sweeps (λ, κ via conditioning, t, m):
-  - `python experiments/sweeps/knobs.py`
+### Algorithm Identification (p=20, 24-layer model, 300 problems/kappa)
 
+| Algorithm | Weighted R^2 | 95% CI |
+|---|---|---|
+| **Precond CG** | **0.922** | 0.008 |
+| **CG** | **0.918** | 0.009 |
+| **Precond GD** | **0.910** | 0.011 |
+| Chebyshev | 0.780 | 0.042 |
+| GD | 0.721 | 0.060 |
+| Heavy Ball | 0.581 | 0.046 |
 
-### What these validate
+Top 3 are indistinguishable (gap 0.004, combined CI 0.017). Model >> GD is clear.
 
-- Baselines check our harness and serve as reference performance.
-- Width–rank validates the spectral-tail prediction: as width m increases, prediction approaches the oracle; we also log effective dimension `d_eff(λ)` per plan.
-- Route A MVP demonstrates the exponential-kernel bridge and reports operator-norm proximity `‖K̃−K_exp‖₂` on supports.
-- Route A end-to-end produces a concrete query prediction matching the exponential-kernel KRR.
-- Preconditioner shows improved convergence with simple diagonal/token-wise scaling, aligning with S2.
-- Knob sweeps produce the scaling plots used in the paper.
+### Silent Failure (softmax attention as kernel regressor)
 
+| Regime | Softmax RMSE | Rank Correlation | Failure |
+|---|---|---|---|
+| Healthy | 2.5 | 0.71 | None |
+| High-dim (p=64) | 8.2 | **0.22** | Silent |
+| Ill-conditioned (kappa=500) | 2.8 | **0.24** | Silent |
 
-These are the first public-facing artifacts to sanity-check Aim 1–2 assumptions and guide hyperparameters for the full ICL prompts and probes.
+## Citation
 
-## Contribution and privacy
+If you use this work, please cite the workshop paper (forthcoming).
 
-- Double-blind policy (AISTATS): do not push author-identifying artifacts to public before decisions. Use anonymized branches if needed.
-- See issues for current work; prefer small PRs that reference tickets (e.g., "Closes #1").
+## License
+
+MIT
