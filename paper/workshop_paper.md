@@ -1,8 +1,8 @@
-# How Precisely Can We Identify the Optimization Algorithm in In-Context Learning?
+# Limits of Algorithm Identification in In-Context Linear Regression
 
 ## Abstract
 
-In-context learning (ICL) in transformers has been linked to gradient descent (GD), but trained models converge faster than GD predicts. We provide the first systematic algorithm identification study for ICL, comparing trained transformers against six named iterative algorithms---vanilla GD, conjugate gradients (CG), preconditioned GD (Jacobi), heavy ball, Chebyshev iteration, and preconditioned CG---with bootstrap confidence intervals and condition-number stratification. Our main findings: **(1)** trained transformers dramatically outperform GD (R^2 gap = 0.20, p < 0.01), confirming second-order convergence; **(2)** CG, preconditioned CG, and preconditioned GD are statistically indistinguishable as descriptions of the model (gap 0.004, CI 0.017), challenging claims that a specific algorithm can be identified; **(3)** internal representations are more GD-like than CG-like by linear probes despite CG-like convergence rates, revealing a mechanistic tension unreported in prior work. Additionally, we characterize silent failure modes of softmax attention as an approximate kernel regressor, identifying regimes where predictions appear plausible but rank ordering is destroyed. Our results suggest that the correct characterization is "CG-convergence-class optimization" rather than any single named algorithm.
+In-context learning (ICL) in transformers has been linked to gradient descent (GD), but trained models converge faster than GD predicts. We provide a systematic algorithm identification study for ICL, comparing trained transformers against six named iterative algorithms---vanilla GD, conjugate gradients (CG), preconditioned GD (Jacobi), heavy ball, Chebyshev iteration, and preconditioned CG---with bootstrap confidence intervals and condition-number stratification. Our main findings: **(1)** trained transformers dramatically outperform GD (R^2 gap = 0.20, p < 0.01), consistent with second-order convergence; **(2)** CG, preconditioned CG, and preconditioned GD are statistically indistinguishable as descriptions of the model (gap 0.004, CI 0.017), suggesting that specific algorithm identification may require larger experimental scales; **(3)** linear probes find internal representations more GD-like than CG-like despite CG-like convergence rates, a suggestive mismatch that requires further investigation with nonlinear probes. Additionally, we characterize silent failure modes of softmax attention as an approximate kernel regressor, identifying regimes where predictions appear plausible but rank ordering is destroyed. Our results suggest that the correct characterization is "CG-convergence-class optimization" rather than any single named algorithm, and that standard observational comparisons face fundamental identifiability limits at current experimental scales.
 
 
 ## 1. Introduction
@@ -17,11 +17,11 @@ Transformers perform in-context learning (ICL): given a sequence of input-output
 
 **Our contribution.** We test six named algorithms simultaneously with statistical rigor:
 
-1. **CG-class confirmed** (Section 3.1): The model's per-problem predictions correlate strongly (R^2 = 0.92) with CG, preconditioned CG, and preconditioned GD, and poorly with vanilla GD (R^2 = 0.72). The separation is large and significant.
+1. **CG-class best fits** (Section 3.1): The model's per-problem predictions correlate strongly (R^2 = 0.92) with CG, preconditioned CG, and preconditioned GD, and poorly with vanilla GD (R^2 = 0.72). The separation is large and significant.
 
-2. **Specific algorithm not identifiable** (Section 3.2): The top three algorithms (CG, Precond CG, Precond GD) have R^2 values within 0.004 of each other, with bootstrap 95% CI of 0.017. Ahn et al.'s "preconditioned GD" is one member of this indistinguishable class.
+2. **Specific algorithm not identifiable** (Section 3.2): The top three algorithms (CG, Precond CG, Precond GD) have R^2 values within 0.004 of each other, with bootstrap 95% CI of 0.017. Ahn et al.'s "preconditioned GD" is one member of this indistinguishable set.
 
-3. **Probe-convergence tension** (Section 3.3): Linear probes for algorithm state variables find GD-like representations despite CG-like convergence---a disconnect not reported in prior work.
+3. **Probe-behavior mismatch** (Section 3.3): Linear probes for algorithm state variables find GD-like representations despite CG-like convergence---a suggestive mismatch that requires nonlinear probes and stronger controls to interpret.
 
 4. **Silent failure characterization** (Section 4): We identify regimes where softmax attention produces plausible predictions with destroyed rank ordering, a failure mode invisible to standard RMSE evaluation.
 
@@ -78,7 +78,7 @@ Each algorithm runs for $L$ steps (matching the model's layer count). At step $\
 
 ## 3. Results
 
-### 3.1 The Model Implements CG-Class Optimization
+### 3.1 The Model Best Fits CG-Class Optimization
 
 Table 1 shows kappa-weighted mean R^2 (weighting higher $\kappa$ more, since that's where algorithms differ most):
 
@@ -107,18 +107,20 @@ Preconditioned GD---the algorithm identified by Ahn et al. (2024)---is also in t
 
 **Why can't we distinguish?** With $p = 20$ features and 24 layers, CG-class methods converge in $\leq p = 20$ steps. Layers 21--24 are past convergence and carry no discriminative signal. All converging algorithms approach the same ridge solution, making late-layer R^2 uninformatively high. Scaling to $p \gg L$ (e.g., $p = 100$, $L = 24$) would force algorithms to be mid-convergence at every layer.
 
-### 3.3 The Probe-Convergence Tension
+### 3.3 Probe-Behavior Mismatch (Exploratory)
 
 We fit linear probes from model activations to algorithm state variables (e.g., CG iterates $\alpha_\ell$, GD weight vectors $\mathbf{w}_\ell$). From the mixed-$\kappa$ trained model:
 
 - **GD probes** achieve higher cosine similarity than CG probes at every $\kappa$ (mean 0.11 vs 0.06)
 - Yet the model's **convergence rate** matches CG, not GD
 
-This tension---GD-like internal representations but CG-like behavior---has not been reported in prior work. Possible explanations:
+This mismatch---GD-like internal representations but CG-like behavior---is suggestive but must be interpreted cautiously given several limitations of our probe setup. Possible explanations:
 
 1. The model implements CG-like optimization but stores states in a representation basis that happens to align better with GD state variables.
 2. The model implements something genuinely different from all six algorithms (not in our comparison set), which happens to have CG-like convergence.
 3. Linear probes are insufficient; the CG-like structure may be recoverable with nonlinear probes.
+
+**Important caveat.** These probes are linear ridge regressions. The low absolute cosine similarity values (0.06--0.14) suggest that neither CG nor GD states are strongly encoded in a linearly accessible form. Nonlinear probes, basis controls, and distribution-shift tests are needed before drawing mechanistic conclusions from this mismatch.
 
 
 ## 4. Silent Failure of Softmax Attention as a Kernel Regressor
@@ -143,7 +145,7 @@ The "high dimension" and "ill-conditioned" cases are *silent* failures: the soft
 
 ## 5. Related Work
 
-**ICL as optimization.** Von Oswald et al. (2023) and Akyurek et al. (2023) established that ICL implements GD on linear tasks. Fu et al. (2023) showed trained models achieve second-order convergence rates. Ahn et al. (2024, NeurIPS) proved transformers learn preconditioned GD with a data-covariance preconditioner. Our work extends this line by testing six algorithms simultaneously and showing the preconditioned-GD identification is not uniquely supported---CG and preconditioned CG are equally consistent.
+**ICL as optimization.** Von Oswald et al. (2023) and Akyurek et al. (2023) established that ICL implements GD on linear tasks. Fu et al. (2023) showed trained models achieve second-order convergence rates. Ahn et al. (2024, NeurIPS) proved transformers learn preconditioned GD with a data-covariance preconditioner. Our work extends this line by testing six algorithms simultaneously and showing the preconditioned-GD identification is not uniquely supported at current scales---CG and preconditioned CG are equally consistent.
 
 **ICL theory.** Mahankali et al. (2023) proved one-layer optimality of GD. Bai et al. (2023) showed transformers can implement algorithm selection across function classes. Park et al. (2024) identified competing algorithmic phases with transitions. Our condition-number-stratified design connects to this "which algorithm when?" question.
 
@@ -154,13 +156,13 @@ The "high dimension" and "ill-conditioned" cases are *silent* failures: the soft
 
 **What we can claim.** Trained ICL transformers implement optimization in the CG convergence class: dramatically faster than GD, matching second-order rates. This is robust across condition numbers, model scales, and evaluation metrics.
 
-**What we cannot claim.** The specific algorithm (CG vs. preconditioned CG vs. preconditioned GD) is not identifiable at experimental scales where $p \leq L$. This challenges the specificity of prior claims, including Ahn et al.'s "preconditioned GD."
+**What we cannot claim.** The specific algorithm (CG vs. preconditioned CG vs. preconditioned GD) is not identifiable at experimental scales where $p \leq L$. This suggests the specificity of prior claims, including Ahn et al.'s "preconditioned GD," requires further investigation at larger scales.
 
-**The probe-convergence tension.** Our finding that internal representations are GD-like but convergence is CG-like suggests that mechanistic interpretability of ICL requires looking beyond linear probes of algorithm state variables. The optimization may be encoded in a basis that doesn't align with any single named algorithm's state space.
+**The probe-behavior mismatch.** Our finding that linear probes recover GD-like states more easily than CG-like states, despite CG-like convergence, is a suggestive observation that we present as exploratory. Resolving this requires nonlinear probes, basis controls, and distribution-shift tests that we leave to future work.
 
 **Implications for practice.** The silent failure modes of softmax attention---where RMSE looks acceptable but rank ordering is destroyed---have practical implications for deploying ICL in settings with high-dimensional features or ill-conditioned data. Evaluating ICL systems by RMSE alone is insufficient; rank correlation and tail-error metrics are essential.
 
-**Limitations and future work.** (1) Our experiments use synthetic linear regression; extending to nonlinear tasks and pretrained LLMs is needed. (2) Scaling to $p \gg L$ (e.g., $p = 100$ with 24 layers) may enable algorithm discrimination. (3) Nonlinear probes (MLP) for CG states could resolve the probe-convergence tension.
+**Limitations and future work.** (1) Our experiments use synthetic linear regression; extending to nonlinear tasks and pretrained LLMs is needed. (2) Scaling to $p \gg L$ (e.g., $p = 100$ with 24 layers) may enable algorithm discrimination. (3) Nonlinear probes (MLP) for CG states could resolve the probe-behavior mismatch.
 
 
 ## References

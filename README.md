@@ -1,13 +1,13 @@
-# MetaRep -- Algorithm Identification in In-Context Learning
+# Limits of Algorithm Identification in In-Context Linear Regression
 
-How precisely can we identify the optimization algorithm implemented by in-context learning? We train transformers on ICL regression tasks and systematically compare their behavior against six named iterative algorithms with bootstrap confidence intervals.
+We can reliably distinguish first-order from CG-class behavior in transformer ICL on linear regression, but cannot uniquely identify the specific member of that class under standard observational comparisons at current experimental scale.
 
 **Main findings** (see `paper/workshop_paper.md`):
 
-1. **Model >> GD**: Trained transformers converge dramatically faster than gradient descent (R^2 gap = 0.20), confirming second-order optimization.
-2. **CG-class confirmed**: Per-problem predictions correlate strongly (R^2 = 0.92) with conjugate gradients, preconditioned CG, and preconditioned GD.
-3. **Specific algorithm not identifiable**: CG, Precond CG, and Precond GD are statistically indistinguishable (gap 0.004, CI 0.017). This challenges the specificity of prior claims.
-4. **Probe-convergence tension**: Internal representations are more GD-like than CG-like despite CG-like convergence -- a disconnect unreported in prior work.
+1. **Model >> GD**: Trained transformers converge dramatically faster than gradient descent (R^2 gap = 0.20), consistent with second-order optimization.
+2. **CG-class best fits**: Per-problem predictions correlate strongly (R^2 = 0.92) with conjugate gradients, preconditioned CG, and preconditioned GD -- but all three fit equally well.
+3. **Specific algorithm not identifiable**: CG, Precond CG, and Precond GD are statistically indistinguishable (gap 0.004, CI 0.017). This suggests the specificity of prior claims requires further investigation.
+4. **Probe-behavior mismatch (exploratory)**: Linear probes find internal representations more GD-like than CG-like despite CG-like convergence -- a suggestive mismatch that requires nonlinear probes and stronger controls to interpret.
 5. **Silent failure modes**: Softmax attention as a kernel regressor fails silently in high-dimensional and ill-conditioned regimes (RMSE looks fine, rank ordering destroyed).
 
 ## Quickstart
@@ -32,6 +32,11 @@ python -m pytest tests/ -v
 
 - `paper/workshop_paper.md` the main paper (workshop format)
 - `experiments/algorithm_id.py` algorithm identification experiment (6 algorithms, CIs, stratified)
+- `experiments/discrimination_sweep.py` p >> L discrimination stress test (the key experiment)
+- `experiments/metric_robustness.py` multi-metric robustness check
+- `experiments/multi_seed.py` seed sensitivity analysis
+- `experiments/probe_sanity.py` probe capacity sweep + sanity checks
+- `experiments/arch_robustness.py` architecture variation sweep
 - `experiments/train_and_probe.py` train ICL transformer, probe for CG/GD states
 - `experiments/train_mixed_kappa.py` mixed-kappa training with feature-space CG
 - `experiments/silent_failure.py` softmax-as-kernel failure mode analysis
@@ -41,6 +46,7 @@ python -m pytest tests/ -v
 - `tests/` 43 tests covering algorithms, convergence, stability
 - `docs/figures/` experimental results and plots
 - `configs/` Hydra configs for experiment sweeps
+- `ACTION_PLAN.md` workshop submission action plan with priority tiers
 
 ## Key results
 
